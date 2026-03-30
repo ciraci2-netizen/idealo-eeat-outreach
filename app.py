@@ -32,7 +32,7 @@ st.markdown("""
     --border-hi:   #3d4a6b;
     --text-1:      #f0f2f8;
     --text-2:      #b0b8d0;
-    --text-3:      #6b7899;
+    --text-3:      #8892aa;
     --accent:      #0070f3;
     --accent-glow: rgba(0,112,243,0.15);
     --accent-hi:   #338ef7;
@@ -179,7 +179,7 @@ h1, h2, h3, h4 {
 .logo-sub {
     font-family: 'GeistMono', monospace;
     font-size: 0.65rem;
-    color: var(--text-3);
+    color: var(--text-2);
     text-transform: uppercase;
     letter-spacing: 0.12em;
 }
@@ -190,7 +190,7 @@ h1, h2, h3, h4 {
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--text-3);
+    color: var(--text-2);
     margin: 1.4rem 0 0.6rem;
     display: flex;
     align-items: center;
@@ -255,7 +255,7 @@ h1, h2, h3, h4 {
     padding: 3px 9px;
     border-radius: 4px;
     border: 1px solid var(--border);
-    color: var(--text-3);
+    color: var(--text-2);
     background: var(--surface-2);
     letter-spacing: 0.04em;
 }
@@ -296,7 +296,7 @@ h1, h2, h3, h4 {
     font-size: 0.65rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--text-3);
+    color: var(--text-2);
     margin-bottom: 0.5rem;
 }
 .kpi-value {
@@ -311,7 +311,7 @@ h1, h2, h3, h4 {
 .kpi-sub {
     font-family: 'GeistMono', monospace;
     font-size: 0.65rem;
-    color: var(--text-3);
+    color: var(--text-2);
     margin-top: 0.3rem;
 }
 
@@ -351,7 +351,7 @@ h1, h2, h3, h4 {
 .rcard-url {
     font-family: 'GeistMono', monospace;
     font-size: 0.7rem;
-    color: var(--text-3);
+    color: var(--text-2);
 }
 .rcard-scores {
     display: flex;
@@ -418,7 +418,7 @@ h1, h2, h3, h4 {
 }
 .rcard-footer-item {
     font-size: 0.78rem;
-    color: var(--text-3);
+    color: var(--text-2);
     display: flex;
     align-items: center;
     gap: 5px;
@@ -438,7 +438,7 @@ h1, h2, h3, h4 {
     border: 1px solid var(--border);
     background: var(--surface-2);
     margin-bottom: 5px;
-    color: var(--text-3);
+    color: var(--text-2);
 }
 .api-status .dot-ok  { width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0; }
 .api-status .dot-err { width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0; }
@@ -463,7 +463,7 @@ h1, h2, h3, h4 {
 .empty-state {
     text-align: center;
     padding: 4rem 2rem;
-    color: var(--text-3);
+    color: var(--text-2);
 }
 .empty-state-icon { font-size: 2.5rem; margin-bottom: 1rem; }
 .empty-state-title {
@@ -599,53 +599,53 @@ I18N = {
         "status_ok":        "configured",
         "status_empty":     "not set",
     },
-    "IT": {
+    "ES": {
         "sidebar_title":    "Idealo EEAT",
         "sidebar_sub":      "Outreach Discovery",
-        "api_config":       "Configurazione API",
-        "api_note":         "Le credenziali sono solo di sessione — mai salvate.",
+        "api_config":       "Configuración API",
+        "api_note":         "Las credenciales son solo de sesión — nunca almacenadas.",
         "key_google":       "Tavily API Key",
         "key_cse":          "",
         "key_openai":       "OpenAI API Key",
-        "search_settings":  "Impostazioni Ricerca",
-        "results_per_q":    "Risultati per query",
-        "delay":            "Ritardo tra query (s)",
-        "min_eeat":         "Score EEAT minimo",
-        "free_tier":        "Free tier · Tavily: 1.000 req/mese · GPT-4o-mini: ~$0.0001/risultato",
+        "search_settings":  "Ajustes de Búsqueda",
+        "results_per_q":    "Resultados por consulta",
+        "delay":            "Pausa entre consultas (s)",
+        "min_eeat":         "Score EEAT mínimo",
+        "free_tier":        "Free tier · Tavily: 1.000 req/mes · GPT-4o-mini: ~$0.0001/resultado",
         "tab_search":       "⚡ Discovery",
-        "tab_results":      "📊 Risultati",
-        "tab_export":       "📤 Esporta",
-        "countries":        "Paesi Target",
-        "profiles":         "Profili Creator",
-        "topics":           "Topic di Prodotto",
-        "custom_kw":        "Keyword personalizzata (opzionale)",
-        "custom_ph":        "es. robot aspirapolvere, e-bike...",
-        "kpi_countries":    "Paesi",
-        "kpi_profiles":     "Profili",
-        "kpi_topics":       "Topic",
-        "kpi_calls":        "Stima chiamate API",
-        "warn_quota":       "⚠ Batch elevato — considera di suddividere la ricerca in sessioni.",
-        "run_btn":          "Avvia Discovery →",
-        "missing":          "Mancante:",
-        "scanning":         "Scansione",
-        "done_msg":         "Completato — {n} candidati (EEAT ≥ {s})",
-        "no_results":       "Nessun risultato",
-        "no_results_sub":   "Avvia una ricerca per trovare candidati all'outreach.",
-        "filter_country":   "Paese",
-        "filter_profile":   "Profilo",
-        "filter_priority":  "Priorità",
-        "showing":          "Mostrati",
-        "of":               "di",
-        "candidates":       "candidati",
-        "why":              "Motivazione",
-        "contact":          "Contatto",
-        "audience":         "Audience",
-        "export_title":     "Esporta candidati",
-        "export_btn":       "Scarica CSV",
-        "preview":          "Anteprima JSON (primi 5)",
-        "no_export":        "Nessun dato da esportare.",
-        "status_ok":        "configurato",
-        "status_empty":     "non impostato",
+        "tab_results":      "📊 Resultados",
+        "tab_export":       "📤 Exportar",
+        "countries":        "Países objetivo",
+        "profiles":         "Perfiles de creador",
+        "topics":           "Temas de producto",
+        "custom_kw":        "Palabra clave personalizada (opcional)",
+        "custom_ph":        "ej. robot aspirador, e-bike...",
+        "kpi_countries":    "Países",
+        "kpi_profiles":     "Perfiles",
+        "kpi_topics":       "Temas",
+        "kpi_calls":        "Llamadas API estimadas",
+        "warn_quota":       "⚠ Lote grande — considera dividir la búsqueda en sesiones.",
+        "run_btn":          "Iniciar Discovery →",
+        "missing":          "Falta:",
+        "scanning":         "Escaneando",
+        "done_msg":         "Completado — {n} candidatos (EEAT ≥ {s})",
+        "no_results":       "Sin resultados",
+        "no_results_sub":   "Inicia una búsqueda para encontrar candidatos de outreach.",
+        "filter_country":   "País",
+        "filter_profile":   "Perfil",
+        "filter_priority":  "Prioridad",
+        "showing":          "Mostrando",
+        "of":               "de",
+        "candidates":       "candidatos",
+        "why":              "Por qué",
+        "contact":          "Contacto",
+        "audience":         "Audiencia",
+        "export_title":     "Exportar candidatos",
+        "export_btn":       "Descargar CSV",
+        "preview":          "Vista previa JSON (primeros 5)",
+        "no_export":        "Sin datos para exportar.",
+        "status_ok":        "configurado",
+        "status_empty":     "no configurado",
     }
 }
 
@@ -733,6 +733,8 @@ if "all_results" not in st.session_state:
     st.session_state.all_results = []
 if "lang" not in st.session_state:
     st.session_state.lang = "EN"
+if "speed" not in st.session_state:
+    st.session_state.speed = "Normal"
 
 
 # ─────────────────────────────────────────────
@@ -756,10 +758,10 @@ with st.sidebar:
         if st.button("🇬🇧 EN", use_container_width=True):
             st.session_state.lang = "EN"
     with lang_col2:
-        if st.button("🇮🇹 IT", use_container_width=True):
-            st.session_state.lang = "IT"
+        if st.button("🇪🇸 ES", use_container_width=True):
+            st.session_state.lang = "ES"
 
-    L = I18N[st.session_state.lang]
+    L = I18N.get(st.session_state.lang, I18N["EN"])
 
     # ── Load from Streamlit secrets if available ──
     _secret_google = st.secrets.get("TAVILY_API_KEY", "") if hasattr(st, "secrets") else ""
@@ -792,9 +794,25 @@ with st.sidebar:
 
     st.markdown(f'<div class="section-label">{L["search_settings"]}</div>', unsafe_allow_html=True)
 
-    results_per_query     = st.slider(L["results_per_q"],    1, 10,  5)
-    delay_between_queries = st.slider(L["delay"],         0.5, 3.0, 1.0, 0.5)
-    min_eeat_score        = st.slider(L["min_eeat"],        0,  80, 30)
+    speed_label = {"EN": ["⚡ Fast", "⚖ Normal", "🔍 Deep"], "ES": ["⚡ Rápido", "⚖ Normal", "🔍 Profundo"]}.get(st.session_state.lang, ["⚡ Fast", "⚖ Normal", "🔍 Deep"])
+    speed = st.radio("Speed", speed_label, index=1, horizontal=True, label_visibility="collapsed")
+    SPEED_PRESETS = {
+        speed_label[0]: {"results_per_query": 3,  "delay": 0.5, "min_eeat": 40},
+        speed_label[1]: {"results_per_query": 5,  "delay": 1.0, "min_eeat": 30},
+        speed_label[2]: {"results_per_query": 10, "delay": 1.5, "min_eeat": 20},
+    }
+    preset = SPEED_PRESETS.get(speed, SPEED_PRESETS[speed_label[1]])
+    results_per_query     = preset["results_per_query"]
+    delay_between_queries = preset["delay"]
+    min_eeat_score        = preset["min_eeat"]
+
+    speed_desc = {
+        speed_label[0]: "3 results · 0.5s delay · EEAT ≥ 40",
+        speed_label[1]: "5 results · 1.0s delay · EEAT ≥ 30",
+        speed_label[2]: "10 results · 1.5s delay · EEAT ≥ 20",
+    }
+    st.markdown(f'<div style="font-family:GeistMono,monospace;font-size:0.68rem;color:var(--text-2);padding:4px 0 8px">{speed_desc[speed]}</div>', unsafe_allow_html=True)
+    min_eeat_score = st.slider(L["min_eeat"], 0, 80, min_eeat_score)
 
     st.markdown(f'<div class="vdivider"></div><div style="font-family:GeistMono,monospace;font-size:0.65rem;color:var(--text-3);line-height:1.8">{L["free_tier"]}</div>', unsafe_allow_html=True)
 
@@ -802,7 +820,7 @@ with st.sidebar:
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
-L = I18N[st.session_state.lang]
+L = I18N.get(st.session_state.lang, I18N["EN"])
 
 # Header
 st.markdown(f"""
