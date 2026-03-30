@@ -557,13 +557,13 @@ I18N = {
         "api_config":       "API Configuration",
         "api_note":         "Credentials are session-only — never stored.",
         "key_google":       "Google Custom Search API Key",
-        "key_cse":          "Google CSE ID",
+        "key_cse":          "",
         "key_openai":       "OpenAI API Key",
         "search_settings":  "Search Settings",
         "results_per_q":    "Results per query",
         "delay":            "Delay between queries (s)",
         "min_eeat":         "Min EEAT score",
-        "free_tier":        "Free tier · Google CSE: 100 req/day · GPT-4o-mini: ~$0.0001/result",
+        "free_tier":        "Free tier · Tavily: 1,000 req/month · GPT-4o-mini: ~$0.0001/result",
         "tab_search":       "⚡ Discovery",
         "tab_results":      "📊 Results",
         "tab_export":       "📤 Export",
@@ -604,14 +604,14 @@ I18N = {
         "sidebar_sub":      "Outreach Discovery",
         "api_config":       "Configurazione API",
         "api_note":         "Le credenziali sono solo di sessione — mai salvate.",
-        "key_google":       "Google Custom Search API Key",
-        "key_cse":          "Google CSE ID",
+        "key_google":       "Tavily API Key",
+        "key_cse":          "",
         "key_openai":       "OpenAI API Key",
         "search_settings":  "Impostazioni Ricerca",
         "results_per_q":    "Risultati per query",
         "delay":            "Ritardo tra query (s)",
         "min_eeat":         "Score EEAT minimo",
-        "free_tier":        "Free tier · Google CSE: 100 req/giorno · GPT-4o-mini: ~$0.0001/risultato",
+        "free_tier":        "Free tier · Tavily: 1.000 req/mese · GPT-4o-mini: ~$0.0001/risultato",
         "tab_search":       "⚡ Discovery",
         "tab_results":      "📊 Risultati",
         "tab_export":       "📤 Esporta",
@@ -624,7 +624,7 @@ I18N = {
         "kpi_profiles":     "Profili",
         "kpi_topics":       "Topic",
         "kpi_calls":        "Stima chiamate API",
-        "warn_quota":       "⚠ Supera il free tier (100/giorno) — riduci o suddividi su più giorni.",
+        "warn_quota":       "⚠ Batch elevato — considera di suddividere la ricerca in sessioni.",
         "run_btn":          "Avvia Discovery →",
         "missing":          "Mancante:",
         "scanning":         "Scansione",
@@ -653,15 +653,25 @@ I18N = {
 # ─────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────
-def google_search(query, api_key, cse_id, gl, hl, num=5):
-    url = "https://www.googleapis.com/customsearch/v1"
-    params = {"key": api_key, "cx": cse_id, "q": query, "gl": gl, "hl": hl, "num": num}
+def tavily_search(query, api_key, country_code, num=5):
+    """Call Tavily Search API — AI-native search, free tier 1000 req/month."""
+    url = "https://api.tavily.com/search"
+    payload = {
+        "api_key": api_key,
+        "query": query,
+        "search_depth": "basic",
+        "max_results": num,
+        "include_answer": False,
+        "include_raw_content": False,
+    }
     try:
-        r = requests.get(url, params=params, timeout=10)
+        r = requests.post(url, json=payload, timeout=15)
         r.raise_for_status()
-        return r.json().get("items", [])
+        raw = r.json().get("results", [])
+        # Normalize to same shape used downstream
+        return [{"title": x.get("title",""), "link": x.get("url",""), "snippet": x.get("content","")} for x in raw]
     except Exception as e:
-        st.warning(f"Search error: {e}")
+        st.warning(f"Tavily search error: {e}")
         return []
 
 
@@ -752,8 +762,8 @@ with st.sidebar:
     L = I18N[st.session_state.lang]
 
     # ── Load from Streamlit secrets if available ──
-    _secret_google = st.secrets.get("GOOGLE_API_KEY", "") if hasattr(st, "secrets") else ""
-    _secret_cse    = st.secrets.get("GOOGLE_CSE_ID",  "") if hasattr(st, "secrets") else ""
+    _secret_google = st.secrets.get("TAVILY_API_KEY", "") if hasattr(st, "secrets") else ""
+    _secret_cse    = ""  # not used with Tavily
     _secret_openai = st.secrets.get("OPENAI_API_KEY", "") if hasattr(st, "secrets") else ""
 
     st.markdown(f'<div class="section-label">{L["api_config"]}</div>', unsafe_allow_html=True)
@@ -766,17 +776,12 @@ with st.sidebar:
     # If not → show text input for manual entry
     if _secret_google:
         google_api_key = _secret_google
-        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>Google CSE Key · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>Tavily Key · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
     else:
         google_api_key = st.text_input(L["key_google"], type="password", placeholder="AIza...", label_visibility="collapsed")
-        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_api_key else "dot-off"}"></div>Google CSE Key · {L["status_ok"] if google_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_api_key else "dot-off"}"></div>Tavily Key · {L["status_ok"] if google_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
 
-    if _secret_cse:
-        google_cse_id = _secret_cse
-        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>CSE ID · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
-    else:
-        google_cse_id = st.text_input(L["key_cse"], placeholder="123:abc...", label_visibility="collapsed")
-        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_cse_id else "dot-off"}"></div>CSE ID · {L["status_ok"] if google_cse_id else L["status_empty"]}</div>', unsafe_allow_html=True)
+    google_cse_id = ""  # Tavily does not need CSE ID
 
     if _secret_openai:
         openai_api_key = _secret_openai
@@ -814,7 +819,7 @@ st.markdown(f"""
   </div>
   <div class="header-badges" style="margin-top:6px">
     <span class="header-badge active">Powered by GPT-4o-mini</span>
-    <span class="header-badge active">Google Custom Search</span>
+    <span class="header-badge active">Tavily Search</span>
     <span class="header-badge active">Budget zero</span>
   </div>
 </div>
@@ -832,7 +837,7 @@ with tab_search:
         st.markdown(f'<div class="section-label">{L["countries"]}</div>', unsafe_allow_html=True)
         selected_countries = st.multiselect(
             L["countries"], list(COUNTRIES.keys()),
-            default=["🇩🇪 Germany", "🇮🇹 Italy"],
+            default=["🇪🇸 Spain"],
             label_visibility="collapsed",
         )
         st.markdown(f'<div class="section-label">{L["profiles"]}</div>', unsafe_allow_html=True)
@@ -854,7 +859,7 @@ with tab_search:
 
     all_topics    = selected_topics + ([custom_kw.strip()] if custom_kw.strip() else [])
     total_queries = len(selected_countries) * len(selected_profiles) * len(all_topics) * 3
-    over_quota    = total_queries > 100
+    over_quota    = total_queries > 200
 
     # KPI grid
     st.markdown(f"""
@@ -877,7 +882,7 @@ with tab_search:
       <div class="kpi-card {'warn' if over_quota else ''}">
         <div class="kpi-label">{L["kpi_calls"]}</div>
         <div class="kpi-value {'warn' if over_quota else ''}">{total_queries}</div>
-        <div class="kpi-sub">{"⚠ > 100 free/day" if over_quota else "✓ within free tier"}</div>
+        <div class="kpi-sub">{"⚠ > 200 recommended" if over_quota else "✓ within free tier"}</div>
       </div>
     </div>
     {"<div class='warn-banner'>" + L['warn_quota'] + "</div>" if over_quota else ""}
@@ -891,8 +896,7 @@ with tab_search:
     # ── RUN ──
     if run_search:
         missing = []
-        if not google_api_key: missing.append("Google API Key")
-        if not google_cse_id:  missing.append("Google CSE ID")
+        if not google_api_key: missing.append("Tavily API Key")
         if not openai_api_key: missing.append("OpenAI API Key")
         if not selected_countries: missing.append("country")
         if not selected_profiles:  missing.append("profile")
@@ -924,8 +928,7 @@ with tab_search:
                         unsafe_allow_html=True
                     )
 
-                    items = google_search(query, google_api_key, google_cse_id,
-                                          gl=ci["code"], hl=ci["lang"], num=results_per_query)
+                    items = tavily_search(query, google_api_key, ci["code"], num=results_per_query)
 
                     for item in items:
                         ai = score_with_gpt(client, item, pi["label"], ci["label"], topic)
