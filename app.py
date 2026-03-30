@@ -24,15 +24,15 @@ st.markdown("""
 @import url('https://fonts.googleapis.com/css2?family=GeistMono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --bg:          #080808;
-    --surface-1:   #111111;
-    --surface-2:   #1a1a1a;
-    --surface-3:   #222222;
-    --border:      #2a2a2a;
-    --border-hi:   #3a3a3a;
-    --text-1:      #ededed;
-    --text-2:      #a1a1aa;
-    --text-3:      #52525b;
+    --bg:          #0f1117;
+    --surface-1:   #181c27;
+    --surface-2:   #1e2335;
+    --surface-3:   #252c3f;
+    --border:      #2e3650;
+    --border-hi:   #3d4a6b;
+    --text-1:      #f0f2f8;
+    --text-2:      #b0b8d0;
+    --text-3:      #6b7899;
     --accent:      #0070f3;
     --accent-glow: rgba(0,112,243,0.15);
     --accent-hi:   #338ef7;
@@ -751,17 +751,39 @@ with st.sidebar:
 
     L = I18N[st.session_state.lang]
 
+    # ── Load from Streamlit secrets if available ──
+    _secret_google = st.secrets.get("GOOGLE_API_KEY", "") if hasattr(st, "secrets") else ""
+    _secret_cse    = st.secrets.get("GOOGLE_CSE_ID",  "") if hasattr(st, "secrets") else ""
+    _secret_openai = st.secrets.get("OPENAI_API_KEY", "") if hasattr(st, "secrets") else ""
+
     st.markdown(f'<div class="section-label">{L["api_config"]}</div>', unsafe_allow_html=True)
-    st.caption(L["api_note"])
 
-    google_api_key = st.text_input(L["key_google"], type="password", placeholder="AIza...", label_visibility="collapsed")
-    st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_api_key else "dot-off"}"></div>Google CSE Key · {"" if not google_api_key else "●●●●" + google_api_key[-4:]} {L["status_ok"] if google_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
+    # Show note only if secrets are NOT already loaded
+    if not (_secret_google and _secret_cse and _secret_openai):
+        st.caption(L["api_note"])
 
-    google_cse_id = st.text_input(L["key_cse"], placeholder="123:abc...", label_visibility="collapsed")
-    st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_cse_id else "dot-off"}"></div>CSE ID · {L["status_ok"] if google_cse_id else L["status_empty"]}</div>', unsafe_allow_html=True)
+    # If secret exists → show locked status, no input needed
+    # If not → show text input for manual entry
+    if _secret_google:
+        google_api_key = _secret_google
+        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>Google CSE Key · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
+    else:
+        google_api_key = st.text_input(L["key_google"], type="password", placeholder="AIza...", label_visibility="collapsed")
+        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_api_key else "dot-off"}"></div>Google CSE Key · {L["status_ok"] if google_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
 
-    openai_api_key = st.text_input(L["key_openai"], type="password", placeholder="sk-...", label_visibility="collapsed")
-    st.markdown(f'<div class="api-status"><div class="{"dot-ok" if openai_api_key else "dot-off"}"></div>OpenAI Key · {L["status_ok"] if openai_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
+    if _secret_cse:
+        google_cse_id = _secret_cse
+        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>CSE ID · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
+    else:
+        google_cse_id = st.text_input(L["key_cse"], placeholder="123:abc...", label_visibility="collapsed")
+        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_cse_id else "dot-off"}"></div>CSE ID · {L["status_ok"] if google_cse_id else L["status_empty"]}</div>', unsafe_allow_html=True)
+
+    if _secret_openai:
+        openai_api_key = _secret_openai
+        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>OpenAI Key · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
+    else:
+        openai_api_key = st.text_input(L["key_openai"], type="password", placeholder="sk-...", label_visibility="collapsed")
+        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if openai_api_key else "dot-off"}"></div>OpenAI Key · {L["status_ok"] if openai_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="section-label">{L["search_settings"]}</div>', unsafe_allow_html=True)
 
@@ -782,15 +804,18 @@ st.markdown(f"""
 <div class="app-header">
   <div class="header-eyebrow">Idealo · EEAT Intelligence</div>
   <div class="header-title"><span>Outreach</span> Discovery</div>
-  <div class="header-sub">AI-powered creator & journalist discovery for link building — DE · IT · FR · ES · UK · PL</div>
+  <div class="header-sub">AI-powered creator &amp; journalist discovery for link building — DE · IT · FR · ES · UK · PL</div>
   <div class="header-badges">
-    <span class="header-badge active">GPT-4o-mini</span>
-    <span class="header-badge active">Google CSE</span>
     <span class="header-badge">Blogger</span>
     <span class="header-badge">Journalist</span>
     <span class="header-badge">Micro-influencer</span>
     <span class="header-badge">YouTuber</span>
-    <span class="header-badge">6 Countries</span>
+    <span class="header-badge">DE · IT · FR · ES · UK · PL</span>
+  </div>
+  <div class="header-badges" style="margin-top:6px">
+    <span class="header-badge active">Powered by GPT-4o-mini</span>
+    <span class="header-badge active">Google Custom Search</span>
+    <span class="header-badge active">Budget zero</span>
   </div>
 </div>
 """, unsafe_allow_html=True)
