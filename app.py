@@ -6,427 +6,1064 @@ import csv
 import io
 from openai import OpenAI
 
+# ─────────────────────────────────────────────
+# PAGE CONFIG
+# ─────────────────────────────────────────────
 st.set_page_config(
-    page_title="Idealo EEAT Outreach Discovery",
-    page_icon="🔍",
+    page_title="Idealo · EEAT Outreach",
+    page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# PREMIUM CSS DESIGN
-# ═══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────
+# PREMIUM DARK CSS — Vercel/Linear inspired
+# ─────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=GeistMono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap');
 
 :root {
-    --primary: #FF6B35;
-    --primary-dark: #D94717;
-    --secondary: #004E89;
-    --accent: #F7B801;
-    --bg-dark: #0F1419;
-    --bg-darker: #0A0E14;
-    --surface: #1A1F2E;
-    --surface-light: #2A3142;
-    --text-primary: #FFFFFF;
-    --text-secondary: #B0B8C8;
-    --text-muted: #7A8292;
-    --success: #06D6A0;
-    --warning: #FFD60A;
-    --danger: #EF476F;
-    --border: #2A3142;
+    --bg:          #080808;
+    --surface-1:   #111111;
+    --surface-2:   #1a1a1a;
+    --surface-3:   #222222;
+    --border:      #2a2a2a;
+    --border-hi:   #3a3a3a;
+    --text-1:      #ededed;
+    --text-2:      #a1a1aa;
+    --text-3:      #52525b;
+    --accent:      #0070f3;
+    --accent-glow: rgba(0,112,243,0.15);
+    --accent-hi:   #338ef7;
+    --green:       #17c964;
+    --green-bg:    rgba(23,201,100,0.08);
+    --amber:       #f5a623;
+    --amber-bg:    rgba(245,166,35,0.08);
+    --red:         #f31260;
+    --red-bg:      rgba(243,18,96,0.08);
+    --radius:      8px;
+    --radius-lg:   12px;
 }
 
-* { font-family: 'Poppins', sans-serif !important; }
-
-html, body, [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%) !important;
-    color: var(--text-primary) !important;
+/* ── GLOBAL RESET ── */
+html, body, [data-testid="stAppViewContainer"],
+[data-testid="stMain"], .main {
+    background: var(--bg) !important;
+    color: var(--text-1) !important;
+    font-family: 'Outfit', sans-serif !important;
 }
 
+/* hide streamlit chrome */
+#MainMenu, footer, header { visibility: hidden !important; }
+[data-testid="stDecoration"] { display: none !important; }
+
+/* ── SIDEBAR ── */
 [data-testid="stSidebar"] {
-    background: rgba(26, 31, 46, 0.95) !important;
+    background: var(--surface-1) !important;
     border-right: 1px solid var(--border) !important;
+    padding-top: 0 !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+    padding-top: 0 !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
-    font-weight: 700 !important;
-    letter-spacing: -0.5px !important;
-    color: var(--text-primary) !important;
-}
-
-h1 { font-size: 2.5rem !important; }
-h2 { font-size: 1.75rem !important; }
-
-.stButton > button {
-    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
-    color: white !important;
-    border: none !important;
-    border-radius: 12px !important;
-    font-weight: 600 !important;
-    padding: 0.75rem 2rem !important;
-    transition: all 0.3s !important;
-    box-shadow: 0 8px 24px rgba(255, 107, 53, 0.2) !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-}
-
-.stButton > button:hover {
-    transform: translateY(-3px) !important;
-    box-shadow: 0 12px 32px rgba(255, 107, 53, 0.35) !important;
-}
-
+/* ── INPUTS ── */
 .stTextInput > div > div > input,
 .stSelectbox > div > div,
 .stMultiSelect > div > div {
-    background: var(--surface) !important;
+    background: var(--surface-2) !important;
     border: 1px solid var(--border) !important;
-    border-radius: 10px !important;
-    color: var(--text-primary) !important;
-    padding: 0.75rem 1rem !important;
+    border-radius: var(--radius) !important;
+    color: var(--text-1) !important;
+    font-family: 'Outfit', sans-serif !important;
 }
-
 .stTextInput > div > div > input:focus {
-    border-color: var(--primary) !important;
-    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1) !important;
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 3px var(--accent-glow) !important;
 }
 
-[data-testid="stMetric"] {
-    background: rgba(26, 31, 46, 0.6) !important;
-    padding: 1.5rem !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--border) !important;
+/* ── SLIDERS ── */
+.stSlider > div > div > div > div {
+    background: var(--accent) !important;
 }
 
-[data-testid="stMetricValue"] {
-    color: var(--accent) !important;
-    font-weight: 700 !important;
+/* ── BUTTON ── */
+.stButton > button {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border: none !important;
+    border-radius: var(--radius) !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    letter-spacing: 0.01em !important;
+    padding: 0.6rem 1.6rem !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 0 20px var(--accent-glow) !important;
+}
+.stButton > button:hover {
+    background: var(--accent-hi) !important;
+    box-shadow: 0 0 30px rgba(0,112,243,0.3) !important;
+    transform: translateY(-1px) !important;
 }
 
-[data-testid="stProgress"] > div > div {
-    background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%) !important;
-    border-radius: 10px !important;
+/* ── TABS ── */
+[data-testid="stTabs"] > div:first-child {
+    border-bottom: 1px solid var(--border) !important;
+    gap: 0 !important;
+}
+button[data-baseweb="tab"] {
+    background: transparent !important;
+    color: var(--text-2) !important;
+    font-family: 'Outfit', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    border-bottom: 2px solid transparent !important;
+    padding: 0.7rem 1.2rem !important;
+    margin-right: 0 !important;
+    transition: color 0.15s !important;
+}
+button[data-baseweb="tab"]:hover { color: var(--text-1) !important; }
+button[data-baseweb="tab"][aria-selected="true"] {
+    color: var(--text-1) !important;
+    border-bottom-color: var(--accent) !important;
 }
 
+/* ── PROGRESS ── */
+[data-testid="stProgressBar"] > div > div {
+    background: var(--accent) !important;
+}
+
+/* ── ALERT / INFO ── */
 [data-testid="stAlert"] {
-    background: rgba(255, 107, 53, 0.1) !important;
-    border-left: 4px solid var(--primary) !important;
-    border-radius: 10px !important;
-}
-
-.result-card {
-    background: linear-gradient(135deg, rgba(26, 31, 46, 0.8) 0%, rgba(42, 49, 66, 0.4) 100%) !important;
+    background: var(--surface-2) !important;
     border: 1px solid var(--border) !important;
-    border-left: 4px solid var(--primary) !important;
-    border-radius: 14px !important;
-    padding: 1.5rem !important;
-    margin-bottom: 1.25rem !important;
+    border-radius: var(--radius) !important;
 }
 
-.result-card:hover {
-    border-left-color: var(--accent) !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3) !important;
+/* ── MARKDOWN headers ── */
+h1, h2, h3, h4 {
+    font-family: 'Outfit', sans-serif !important;
+    letter-spacing: -0.03em !important;
+    color: var(--text-1) !important;
 }
 
-.badge {
-    display: inline-block;
-    border-radius: 8px;
-    padding: 0.4rem 0.8rem;
-    font-family: 'Space Mono', monospace;
-    font-size: 0.7rem;
-    margin-right: 0.5rem;
+/* ── CUSTOM COMPONENTS ── */
+
+/* Sidebar logo block */
+.sidebar-logo {
+    padding: 1.4rem 1.2rem 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.2rem;
+}
+.sidebar-logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin-bottom: 0.5rem;
-    font-weight: 600;
+}
+.logo-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 8px var(--accent);
+}
+.logo-text {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-1);
+    letter-spacing: -0.01em;
+}
+.logo-sub {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-3);
     text-transform: uppercase;
+    letter-spacing: 0.12em;
 }
 
-.profile-tag {
-    background: rgba(255, 107, 53, 0.15) !important;
-    border: 1px solid rgba(255, 107, 53, 0.3) !important;
-    color: var(--primary) !important;
+/* Section label */
+.section-label {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+    margin: 1.4rem 0 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
 }
 
-.country-tag {
-    background: rgba(0, 78, 137, 0.15) !important;
-    border: 1px solid rgba(0, 78, 137, 0.3) !important;
-    color: #5DADE2 !important;
+/* Header */
+.app-header {
+    padding: 2rem 0 1.8rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.app-header::before {
+    content: '';
+    position: absolute;
+    top: -60px; left: -40px;
+    width: 300px; height: 200px;
+    background: radial-gradient(ellipse, rgba(0,112,243,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+.header-eyebrow {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.7rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 0.5rem;
+}
+.header-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--text-1);
+    line-height: 1.1;
+    margin-bottom: 0.4rem;
+}
+.header-title span { color: var(--accent); }
+.header-sub {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem;
+    color: var(--text-2);
+    font-weight: 400;
+}
+.header-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+.header-badge {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.7rem;
+    padding: 3px 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-3);
+    background: var(--surface-2);
+    letter-spacing: 0.04em;
+}
+.header-badge.active {
+    border-color: rgba(0,112,243,0.4);
+    color: var(--accent-hi);
+    background: var(--accent-glow);
 }
 
-.score-badge {
-    padding: 0.5rem 1.2rem !important;
-    border-radius: 10px !important;
-    font-family: 'Space Mono', monospace !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
+/* KPI cards */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 1.4rem 0;
+}
+.kpi-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.2rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+}
+.kpi-card:hover { border-color: var(--border-hi); }
+.kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), transparent);
+    opacity: 0.6;
+}
+.kpi-card.warn::before { background: linear-gradient(90deg, var(--red), transparent); }
+.kpi-label {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-3);
+    margin-bottom: 0.5rem;
+}
+.kpi-value {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    color: var(--text-1);
+    line-height: 1;
+}
+.kpi-value.warn { color: var(--red); }
+.kpi-sub {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-3);
+    margin-top: 0.3rem;
 }
 
-.score-high {
-    background: rgba(6, 214, 160, 0.15) !important;
-    color: var(--success) !important;
-    border: 1px solid rgba(6, 214, 160, 0.3) !important;
+/* Result card */
+.rcard {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 10px;
+    transition: border-color 0.15s, background 0.15s;
+    position: relative;
+    overflow: hidden;
+}
+.rcard:hover {
+    border-color: var(--border-hi);
+    background: var(--surface-2);
+}
+.rcard-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+.rcard-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-1);
+    text-decoration: none;
+    line-height: 1.3;
+    display: block;
+    margin-bottom: 2px;
+}
+.rcard-title:hover { color: var(--accent-hi); }
+.rcard-url {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-3);
+}
+.rcard-scores {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: center;
+}
+.score-pill {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 5px;
+    white-space: nowrap;
+}
+.score-pill.hi  { background: var(--green-bg);  color: var(--green);  border: 1px solid rgba(23,201,100,0.2); }
+.score-pill.mid { background: var(--amber-bg);  color: var(--amber);  border: 1px solid rgba(245,166,35,0.2); }
+.score-pill.lo  { background: var(--red-bg);    color: var(--red);    border: 1px solid rgba(243,18,96,0.2); }
+.prio-pill {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+.prio-HIGH   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(23,201,100,0.25); }
+.prio-MEDIUM { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(245,166,35,0.25); }
+.prio-LOW    { background: var(--red-bg);   color: var(--red);   border: 1px solid rgba(243,18,96,0.25); }
+
+.rcard-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 0.7rem;
+    align-items: center;
+}
+.tag {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.67rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--surface-3);
+    border: 1px solid var(--border);
+    color: var(--text-2);
+    letter-spacing: 0.03em;
+}
+.tag.profile { color: var(--accent-hi); border-color: rgba(0,112,243,0.2); background: var(--accent-glow); }
+.tag.country { color: #a78bfa; border-color: rgba(167,139,250,0.2); background: rgba(167,139,250,0.06); }
+
+.rcard-snippet {
+    font-size: 0.83rem;
+    color: var(--text-2);
+    line-height: 1.5;
+    margin-bottom: 0.7rem;
+}
+.rcard-footer {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding-top: 0.7rem;
+    border-top: 1px solid var(--border);
+}
+.rcard-footer-item {
+    font-size: 0.78rem;
+    color: var(--text-3);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.rcard-footer-item strong { color: var(--text-2); font-weight: 500; }
+.rcard-footer-item .dot { color: var(--accent); }
+
+/* Sidebar API section */
+.api-status {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: 'GeistMono', monospace;
+    font-size: 0.7rem;
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    margin-bottom: 5px;
+    color: var(--text-3);
+}
+.api-status .dot-ok  { width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0; }
+.api-status .dot-err { width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0; }
+.api-status .dot-off { width:6px;height:6px;border-radius:50%;background:var(--text-3);flex-shrink:0; }
+
+/* divider */
+.vdivider { width:100%; height:1px; background:var(--border); margin:1rem 0; }
+
+/* warning banner */
+.warn-banner {
+    background: rgba(243,18,96,0.06);
+    border: 1px solid rgba(243,18,96,0.2);
+    border-radius: var(--radius);
+    padding: 0.7rem 1rem;
+    font-size: 0.82rem;
+    color: var(--red);
+    font-family: 'GeistMono', monospace;
+    margin-top: 0.5rem;
 }
 
-.score-mid {
-    background: rgba(247, 184, 1, 0.15) !important;
-    color: var(--warning) !important;
-    border: 1px solid rgba(247, 184, 1, 0.3) !important;
+/* empty state */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-3);
 }
+.empty-state-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+.empty-state-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 0.4rem;
+}
+.empty-state-sub { font-size: 0.83rem; }
 
-.score-low {
-    background: rgba(239, 71, 111, 0.15) !important;
-    color: var(--danger) !important;
-    border: 1px solid rgba(239, 71, 111, 0.3) !important;
+/* results summary bar */
+.results-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.2rem;
 }
-
-hr {
-    border-color: var(--border) !important;
-    margin: 2rem 0 !important;
+.results-count {
+    font-family: 'GeistMono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-2);
 }
+.results-count span { color: var(--text-1); font-weight: 600; }
 </style>
 """, unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════════════════════
+
+# ─────────────────────────────────────────────
 # CONSTANTS
-# ═══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────
 COUNTRIES = {
-    "🇩🇪 Germany (DE)": {"code": "de", "lang": "de", "label": "DE"},
-    "🇮🇹 Italy (IT)": {"code": "it", "lang": "it", "label": "IT"},
-    "🇫🇷 France (FR)": {"code": "fr", "lang": "fr", "label": "FR"},
-    "🇪🇸 Spain (ES)": {"code": "es", "lang": "es", "label": "ES"},
-    "🇬🇧 UK (UK)": {"code": "uk", "lang": "en", "label": "UK"},
-    "🇵🇱 Poland (PL)": {"code": "pl", "lang": "pl", "label": "PL"},
+    "🇩🇪 Germany":  {"code": "de", "lang": "de", "label": "DE"},
+    "🇮🇹 Italy":    {"code": "it", "lang": "it", "label": "IT"},
+    "🇫🇷 France":   {"code": "fr", "lang": "fr", "label": "FR"},
+    "🇪🇸 Spain":    {"code": "es", "lang": "es", "label": "ES"},
+    "🇬🇧 UK":       {"code": "uk", "lang": "en", "label": "UK"},
+    "🇵🇱 Poland":   {"code": "pl", "lang": "pl", "label": "PL"},
 }
 
 PROFILES = {
-    "📝 Blogger": {"label": "Blogger", "queries": ['{keyword} blog {country}', 'best {keyword} {country} blog review', '{keyword} recommendations blogger review']},
-    "📰 Journalist": {"label": "Journalist", "queries": ['{keyword} journalist {country}', '{keyword} article review {country}', '{keyword} journalist news {country}']},
-    "🤳 Micro-influencer": {"label": "Micro-influencer", "queries": ['{keyword} influencer {country}', '{keyword} micro influencer', '{keyword} creator collaboration']},
-    "▶️ YouTuber": {"label": "YouTuber", "queries": ['{keyword} review youtube', '{keyword} youtube channel', '{keyword} youtuber comparison']},
+    "📝 Blogger": {
+        "label": "Blogger",
+        "queries": [
+            '{keyword} blog {country}',
+            'best {keyword} {country} blog review',
+            '{keyword} recommendations blogger site:wordpress.com OR site:blogspot.com',
+        ]
+    },
+    "📰 Journalist": {
+        "label": "Journalist",
+        "queries": [
+            '{keyword} journalist {country}',
+            '{keyword} article review journalist {country}',
+            'site:linkedin.com {keyword} journalist {country}',
+        ]
+    },
+    "🤳 Micro-influencer": {
+        "label": "Micro-influencer",
+        "queries": [
+            '{keyword} influencer {country} site:instagram.com OR site:tiktok.com',
+            '{keyword} micro influencer {country}',
+            '{keyword} creator {country} collaboration',
+        ]
+    },
+    "▶️ YouTuber": {
+        "label": "YouTuber",
+        "queries": [
+            '{keyword} review {country} site:youtube.com',
+            '{keyword} youtube channel {country}',
+            '{keyword} youtuber {country} comparison',
+        ]
+    },
 }
 
-TOPICS = ["smartphones", "laptops", "headphones", "smart home", "tablets", "cameras", "TVs", "washing machines", "vacuum cleaners", "gaming peripherals"]
+TOPICS = [
+    "smartphones", "laptops", "headphones", "smart home",
+    "tablets", "cameras", "TVs", "washing machines",
+    "vacuum cleaners", "gaming peripherals",
+]
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────
+# I18N — bilingual EN/IT
+# ─────────────────────────────────────────────
+I18N = {
+    "EN": {
+        "sidebar_title":    "Idealo EEAT",
+        "sidebar_sub":      "Outreach Discovery",
+        "api_config":       "API Configuration",
+        "api_note":         "Credentials are session-only — never stored.",
+        "key_google":       "Google Custom Search API Key",
+        "key_cse":          "Google CSE ID",
+        "key_openai":       "OpenAI API Key",
+        "search_settings":  "Search Settings",
+        "results_per_q":    "Results per query",
+        "delay":            "Delay between queries (s)",
+        "min_eeat":         "Min EEAT score",
+        "free_tier":        "Free tier · Google CSE: 100 req/day · GPT-4o-mini: ~$0.0001/result",
+        "tab_search":       "⚡ Discovery",
+        "tab_results":      "📊 Results",
+        "tab_export":       "📤 Export",
+        "countries":        "Target Countries",
+        "profiles":         "Creator Profiles",
+        "topics":           "Product Topics",
+        "custom_kw":        "Custom keyword (optional)",
+        "custom_ph":        "e.g. robot vacuum, e-bike...",
+        "kpi_countries":    "Countries",
+        "kpi_profiles":     "Profiles",
+        "kpi_topics":       "Topics",
+        "kpi_calls":        "Est. API calls",
+        "warn_quota":       "⚠ Exceeds free tier (100/day) — reduce scope or split across days.",
+        "run_btn":          "Run Discovery →",
+        "missing":          "Missing:",
+        "scanning":         "Scanning",
+        "done_msg":         "Done — {n} candidates (EEAT ≥ {s})",
+        "no_results":       "No results yet",
+        "no_results_sub":   "Run a discovery search to find outreach candidates.",
+        "filter_country":   "Country",
+        "filter_profile":   "Profile",
+        "filter_priority":  "Priority",
+        "showing":          "Showing",
+        "of":               "of",
+        "candidates":       "candidates",
+        "why":              "Why",
+        "contact":          "Contact",
+        "audience":         "Audience",
+        "export_title":     "Export candidates",
+        "export_btn":       "Download CSV",
+        "preview":          "JSON preview (first 5)",
+        "no_export":        "No data to export yet.",
+        "status_ok":        "configured",
+        "status_empty":     "not set",
+    },
+    "IT": {
+        "sidebar_title":    "Idealo EEAT",
+        "sidebar_sub":      "Outreach Discovery",
+        "api_config":       "Configurazione API",
+        "api_note":         "Le credenziali sono solo di sessione — mai salvate.",
+        "key_google":       "Google Custom Search API Key",
+        "key_cse":          "Google CSE ID",
+        "key_openai":       "OpenAI API Key",
+        "search_settings":  "Impostazioni Ricerca",
+        "results_per_q":    "Risultati per query",
+        "delay":            "Ritardo tra query (s)",
+        "min_eeat":         "Score EEAT minimo",
+        "free_tier":        "Free tier · Google CSE: 100 req/giorno · GPT-4o-mini: ~$0.0001/risultato",
+        "tab_search":       "⚡ Discovery",
+        "tab_results":      "📊 Risultati",
+        "tab_export":       "📤 Esporta",
+        "countries":        "Paesi Target",
+        "profiles":         "Profili Creator",
+        "topics":           "Topic di Prodotto",
+        "custom_kw":        "Keyword personalizzata (opzionale)",
+        "custom_ph":        "es. robot aspirapolvere, e-bike...",
+        "kpi_countries":    "Paesi",
+        "kpi_profiles":     "Profili",
+        "kpi_topics":       "Topic",
+        "kpi_calls":        "Stima chiamate API",
+        "warn_quota":       "⚠ Supera il free tier (100/giorno) — riduci o suddividi su più giorni.",
+        "run_btn":          "Avvia Discovery →",
+        "missing":          "Mancante:",
+        "scanning":         "Scansione",
+        "done_msg":         "Completato — {n} candidati (EEAT ≥ {s})",
+        "no_results":       "Nessun risultato",
+        "no_results_sub":   "Avvia una ricerca per trovare candidati all'outreach.",
+        "filter_country":   "Paese",
+        "filter_profile":   "Profilo",
+        "filter_priority":  "Priorità",
+        "showing":          "Mostrati",
+        "of":               "di",
+        "candidates":       "candidati",
+        "why":              "Motivazione",
+        "contact":          "Contatto",
+        "audience":         "Audience",
+        "export_title":     "Esporta candidati",
+        "export_btn":       "Scarica CSV",
+        "preview":          "Anteprima JSON (primi 5)",
+        "no_export":        "Nessun dato da esportare.",
+        "status_ok":        "configurato",
+        "status_empty":     "non impostato",
+    }
+}
+
+
+# ─────────────────────────────────────────────
 # HELPERS
-# ═══════════════════════════════════════════════════════════════════════════════
-def tavily_search(query: str, api_key: str, num: int = 5) -> list:
-    """Call Tavily Search API."""
+# ─────────────────────────────────────────────
+def google_search(query, api_key, cse_id, gl, hl, num=5):
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {"key": api_key, "cx": cse_id, "q": query, "gl": gl, "hl": hl, "num": num}
     try:
-        url = "https://api.tavily.com/search"
-        payload = {"api_key": api_key, "query": query, "max_results": num, "include_answer": True}
-        response = requests.post(url, json=payload, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        results = []
-        for result in data.get("results", []):
-            results.append({"title": result.get("title", ""), "link": result.get("url", ""), "snippet": result.get("content", "")})
-        return results
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        return r.json().get("items", [])
     except Exception as e:
-        st.warning(f"Tavily search error: {e}")
+        st.warning(f"Search error: {e}")
         return []
 
-def score_with_gpt(client: OpenAI, result: dict, profile: str, country: str, keyword: str) -> dict:
-    """Use GPT-4o-mini to score & enrich a search result."""
-    system_prompt = "You are an EEAT outreach analyst for Idealo. Evaluate web results to identify high-quality outreach candidates. Respond ONLY with valid JSON."
-    
-    user_prompt = f"""Evaluate this result for outreach potential:
-Profile type: {profile}
-Target country: {country}
-Keyword topic: {keyword}
 
-Result:
-- Title: {result.get('title', '')}
-- URL: {result.get('link', '')}
-- Snippet: {result.get('snippet', '')}
+def score_with_gpt(client, result, profile, country, keyword):
+    system_prompt = (
+        "You are an EEAT outreach analyst for Idealo, Europe's leading price comparison platform. "
+        "Evaluate web results to identify high-quality outreach candidates. "
+        "Respond ONLY with valid JSON — no markdown, no explanation."
+    )
+    user_prompt = f"""Evaluate for outreach potential:
+Profile: {profile} | Country: {country} | Topic: {keyword}
+Title: {result.get('title','')}
+URL: {result.get('link','')}
+Snippet: {result.get('snippet','')}
 
-Return JSON with: eeat_score (0-100), relevance_score (0-100), outreach_priority (HIGH/MEDIUM/LOW), contact_hint, why, estimated_audience, content_type"""
-
+Return JSON with keys:
+eeat_score (0-100), relevance_score (0-100),
+outreach_priority ("HIGH"|"MEDIUM"|"LOW"),
+contact_hint (string), why (one sentence),
+estimated_audience (string), content_type (string)"""
     try:
-        response = client.chat.completions.create(
+        resp = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_prompt}],
-            temperature=0.3,
-            max_tokens=300,
+            messages=[{"role":"system","content":system_prompt},{"role":"user","content":user_prompt}],
+            temperature=0.3, max_tokens=300,
         )
-        raw = response.choices[0].message.content.strip().replace("```json", "").replace("```", "").strip()
+        raw = resp.choices[0].message.content.strip().replace("```json","").replace("```","").strip()
         return json.loads(raw)
-    except:
-        return {"eeat_score": 0, "relevance_score": 0, "outreach_priority": "LOW", "contact_hint": "unknown", "why": "Parsing error", "estimated_audience": "unknown", "content_type": "unknown"}
+    except Exception as e:
+        return {"eeat_score":0,"relevance_score":0,"outreach_priority":"LOW",
+                "contact_hint":"unknown","why":f"Error: {e}","estimated_audience":"unknown","content_type":"unknown"}
 
-# ═══════════════════════════════════════════════════════════════════════════════
+
+def build_query(template, keyword, country_label):
+    return template.replace("{keyword}", keyword).replace("{country}", country_label)
+
+
+def pill_class(score):
+    if score >= 70: return "hi"
+    if score >= 40: return "mid"
+    return "lo"
+
+
+def results_to_csv(results):
+    if not results: return ""
+    keys = ["title","url","snippet","profile","country","keyword",
+            "eeat_score","relevance_score","outreach_priority",
+            "contact_hint","estimated_audience","content_type","why"]
+    buf = io.StringIO()
+    w = csv.DictWriter(buf, fieldnames=keys, extrasaction="ignore")
+    w.writeheader(); w.writerows(results)
+    return buf.getvalue()
+
+
+# ─────────────────────────────────────────────
+# SESSION STATE
+# ─────────────────────────────────────────────
+if "all_results" not in st.session_state:
+    st.session_state.all_results = []
+if "lang" not in st.session_state:
+    st.session_state.lang = "EN"
+
+
+# ─────────────────────────────────────────────
 # SIDEBAR
-# ═══════════════════════════════════════════════════════════════════════════════
+# ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## ⚙️ Configuration")
-    
-    tavily_key = st.text_input("Tavily API Key", value=st.secrets.get("TAVILY_API_KEY", ""), type="password")
-    openai_key = st.text_input("OpenAI API Key", value=st.secrets.get("OPENAI_API_KEY", ""), type="password")
-    
-    if not tavily_key or not openai_key:
-        st.warning("⚠️ Missing API keys!")
-        st.stop()
-    
-    st.divider()
-    st.markdown("## 🎯 Search Config")
-    
-    selected_countries = st.multiselect("Countries", list(COUNTRIES.keys()), default=list(COUNTRIES.keys())[:2])
-    selected_profiles = st.multiselect("Profiles", list(PROFILES.keys()), default=list(PROFILES.keys())[:2])
-    selected_topics = st.multiselect("Topics", TOPICS, default=TOPICS[:3])
-    
-    st.divider()
-    st.markdown("## ⚡ Speed Mode")
-    speed_mode = st.radio("Mode", ["🚀 Fast (1-2 min)", "⚙️ Normal (5-10 min)", "🔬 Thorough (15+ min)"], index=0)
-    
-    if "Fast" in speed_mode:
-        queries_per_combo, results_per_query = 1, 3
-    elif "Normal" in speed_mode:
-        queries_per_combo, results_per_query = 3, 5
-    else:
-        queries_per_combo, results_per_query = 3, 10
+    # — Logo block —
+    st.markdown("""
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">
+        <div class="logo-dot"></div>
+        <div class="logo-text">Idealo EEAT</div>
+      </div>
+      <div class="logo-sub">Outreach Discovery · v2</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# MAIN CONTENT
-# ═══════════════════════════════════════════════════════════════════════════════
-st.markdown("""
-<div style='text-align: center; padding: 2rem 0;'>
-    <div style='font-size: 3rem; margin-bottom: 0.5rem;'>🔍</div>
-    <h1>Idealo EEAT Outreach Discovery</h1>
-    <p style='color: #B0B8C8; font-size: 1.1rem;'>Find high-quality, EEAT-optimized outreach candidates</p>
+    # — Language toggle —
+    lang_col1, lang_col2 = st.columns(2)
+    with lang_col1:
+        if st.button("🇬🇧 EN", use_container_width=True):
+            st.session_state.lang = "EN"
+    with lang_col2:
+        if st.button("🇮🇹 IT", use_container_width=True):
+            st.session_state.lang = "IT"
+
+    L = I18N[st.session_state.lang]
+
+    st.markdown(f'<div class="section-label">{L["api_config"]}</div>', unsafe_allow_html=True)
+    st.caption(L["api_note"])
+
+    google_api_key = st.text_input(L["key_google"], type="password", placeholder="AIza...", label_visibility="collapsed")
+    st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_api_key else "dot-off"}"></div>Google CSE Key · {"" if not google_api_key else "●●●●" + google_api_key[-4:]} {L["status_ok"] if google_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
+
+    google_cse_id = st.text_input(L["key_cse"], placeholder="123:abc...", label_visibility="collapsed")
+    st.markdown(f'<div class="api-status"><div class="{"dot-ok" if google_cse_id else "dot-off"}"></div>CSE ID · {L["status_ok"] if google_cse_id else L["status_empty"]}</div>', unsafe_allow_html=True)
+
+    openai_api_key = st.text_input(L["key_openai"], type="password", placeholder="sk-...", label_visibility="collapsed")
+    st.markdown(f'<div class="api-status"><div class="{"dot-ok" if openai_api_key else "dot-off"}"></div>OpenAI Key · {L["status_ok"] if openai_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
+
+    st.markdown(f'<div class="section-label">{L["search_settings"]}</div>', unsafe_allow_html=True)
+
+    results_per_query     = st.slider(L["results_per_q"],    1, 10,  5)
+    delay_between_queries = st.slider(L["delay"],         0.5, 3.0, 1.0, 0.5)
+    min_eeat_score        = st.slider(L["min_eeat"],        0,  80, 30)
+
+    st.markdown(f'<div class="vdivider"></div><div style="font-family:GeistMono,monospace;font-size:0.65rem;color:var(--text-3);line-height:1.8">{L["free_tier"]}</div>', unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# MAIN
+# ─────────────────────────────────────────────
+L = I18N[st.session_state.lang]
+
+# Header
+st.markdown(f"""
+<div class="app-header">
+  <div class="header-eyebrow">Idealo · EEAT Intelligence</div>
+  <div class="header-title"><span>Outreach</span> Discovery</div>
+  <div class="header-sub">AI-powered creator & journalist discovery for link building — DE · IT · FR · ES · UK · PL</div>
+  <div class="header-badges">
+    <span class="header-badge active">GPT-4o-mini</span>
+    <span class="header-badge active">Google CSE</span>
+    <span class="header-badge">Blogger</span>
+    <span class="header-badge">Journalist</span>
+    <span class="header-badge">Micro-influencer</span>
+    <span class="header-badge">YouTuber</span>
+    <span class="header-badge">6 Countries</span>
+  </div>
 </div>
 """, unsafe_allow_html=True)
 
-st.divider()
+tab_search, tab_results, tab_export = st.tabs([L["tab_search"], L["tab_results"], L["tab_export"]])
 
-# Stats
-col1, col2, col3, col4 = st.columns(4)
-num_countries = len(selected_countries)
-num_profiles = len(selected_profiles)
-num_topics = len(selected_topics)
-total_queries = num_countries * num_profiles * num_topics * queries_per_combo
+# ─────────────────────────────────────────────
+# TAB 1 — DISCOVERY
+# ─────────────────────────────────────────────
+with tab_search:
+    col_left, col_right = st.columns([1, 1], gap="large")
 
-with col1:
-    st.metric("🌍 Countries", num_countries)
-with col2:
-    st.metric("👥 Profiles", num_profiles)
-with col3:
-    st.metric("📌 Topics", num_topics)
-with col4:
-    st.metric("📊 Est. Queries", total_queries)
+    with col_left:
+        st.markdown(f'<div class="section-label">{L["countries"]}</div>', unsafe_allow_html=True)
+        selected_countries = st.multiselect(
+            L["countries"], list(COUNTRIES.keys()),
+            default=["🇩🇪 Germany", "🇮🇹 Italy"],
+            label_visibility="collapsed",
+        )
+        st.markdown(f'<div class="section-label">{L["profiles"]}</div>', unsafe_allow_html=True)
+        selected_profiles = st.multiselect(
+            L["profiles"], list(PROFILES.keys()),
+            default=["📝 Blogger", "▶️ YouTuber"],
+            label_visibility="collapsed",
+        )
 
-if total_queries > 100:
-    st.warning(f"⚠️ This will use ~{total_queries} Tavily credits (free: 1000/month)")
+    with col_right:
+        st.markdown(f'<div class="section-label">{L["topics"]}</div>', unsafe_allow_html=True)
+        selected_topics = st.multiselect(
+            L["topics"], TOPICS,
+            default=["smartphones", "laptops"],
+            label_visibility="collapsed",
+        )
+        st.markdown(f'<div class="section-label">{L["custom_kw"]}</div>', unsafe_allow_html=True)
+        custom_kw = st.text_input(L["custom_kw"], placeholder=L["custom_ph"], label_visibility="collapsed")
 
-if st.button("🚀 START DISCOVERY", type="primary", use_container_width=True):
-    results_data = []
-    progress_bar = st.progress(0)
-    status = st.status("Running discovery...", expanded=True)
-    
-    client = OpenAI(api_key=openai_key)
-    total_steps = num_countries * num_profiles * num_topics * queries_per_combo
-    step = 0
-    
-    for country_name in selected_countries:
-        for profile_name in selected_profiles:
-            for topic in selected_topics:
-                profile_obj = PROFILES[profile_name]
-                country_obj = COUNTRIES[country_name]
-                
-                for query_template in profile_obj["queries"][:queries_per_combo]:
-                    step += 1
-                    progress_bar.progress(step / total_steps)
-                    
-                    query = query_template.format(keyword=topic, country=country_obj["label"])
-                    status.write(f"🔍 {country_name} → {profile_name} → {topic}")
-                    
-                    search_results = tavily_search(query, tavily_key, num=results_per_query)
-                    
-                    for result in search_results:
-                        score = score_with_gpt(client, result, profile_name, country_obj["label"], topic)
-                        results_data.append({
-                            "country": country_obj["label"],
-                            "profile": profile_name,
-                            "topic": topic,
-                            "title": result["title"],
-                            "url": result["link"],
-                            "snippet": result["snippet"],
-                            "eeat_score": score["eeat_score"],
-                            "relevance_score": score["relevance_score"],
-                            "priority": score["outreach_priority"],
-                            "contact": score["contact_hint"],
-                            "content_type": score["content_type"],
-                            "audience": score["estimated_audience"],
-                            "why": score["why"],
-                        })
-                    
-                    time.sleep(0.5)
-    
-    status.update(label="✅ Complete!", state="complete")
-    progress_bar.progress(1.0)
-    st.session_state.results = results_data
-    st.success(f"✅ Found {len(results_data)} candidates!")
+    all_topics    = selected_topics + ([custom_kw.strip()] if custom_kw.strip() else [])
+    total_queries = len(selected_countries) * len(selected_profiles) * len(all_topics) * 3
+    over_quota    = total_queries > 100
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# RESULTS
-# ═══════════════════════════════════════════════════════════════════════════════
-if "results" in st.session_state and st.session_state.results:
-    st.divider()
-    st.markdown("## 📊 Results")
-    
-    results = st.session_state.results
-    
-    f_col1, f_col2, f_col3 = st.columns(3)
-    with f_col1:
-        filter_priority = st.multiselect("Priority", ["HIGH", "MEDIUM", "LOW"], default=["HIGH", "MEDIUM"], key="p")
-    with f_col2:
-        filter_country = st.multiselect("Country", sorted(set(r["country"] for r in results)), key="c")
-    with f_col3:
-        min_score = st.slider("Min EEAT Score", 0, 100, 30, key="s")
-    
-    filtered = [r for r in results if r["priority"] in filter_priority and r["eeat_score"] >= min_score]
-    if filter_country:
-        filtered = [r for r in filtered if r["country"] in filter_country]
-    
-    filtered = sorted(filtered, key=lambda x: x["eeat_score"], reverse=True)
-    
-    st.markdown(f"**Showing {len(filtered)} of {len(results)} results**\n")
-    
-    for result in filtered:
-        score_class = "score-high" if result["eeat_score"] >= 70 else ("score-mid" if result["eeat_score"] >= 50 else "score-low")
-        
+    # KPI grid
+    st.markdown(f"""
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">{L["kpi_countries"]}</div>
+        <div class="kpi-value">{len(selected_countries)}</div>
+        <div class="kpi-sub">{"·".join([COUNTRIES[c]["label"] for c in selected_countries]) or "—"}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">{L["kpi_profiles"]}</div>
+        <div class="kpi-value">{len(selected_profiles)}</div>
+        <div class="kpi-sub">{", ".join([PROFILES[p]["label"] for p in selected_profiles]) or "—"}</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">{L["kpi_topics"]}</div>
+        <div class="kpi-value">{len(all_topics)}</div>
+        <div class="kpi-sub">{", ".join(all_topics[:3]) + ("…" if len(all_topics)>3 else "") if all_topics else "—"}</div>
+      </div>
+      <div class="kpi-card {'warn' if over_quota else ''}">
+        <div class="kpi-label">{L["kpi_calls"]}</div>
+        <div class="kpi-value {'warn' if over_quota else ''}">{total_queries}</div>
+        <div class="kpi-sub">{"⚠ > 100 free/day" if over_quota else "✓ within free tier"}</div>
+      </div>
+    </div>
+    {"<div class='warn-banner'>" + L['warn_quota'] + "</div>" if over_quota else ""}
+    """, unsafe_allow_html=True)
+
+    st.markdown("")
+    run_col, _ = st.columns([1, 3])
+    with run_col:
+        run_search = st.button(L["run_btn"], use_container_width=True)
+
+    # ── RUN ──
+    if run_search:
+        missing = []
+        if not google_api_key: missing.append("Google API Key")
+        if not google_cse_id:  missing.append("Google CSE ID")
+        if not openai_api_key: missing.append("OpenAI API Key")
+        if not selected_countries: missing.append("country")
+        if not selected_profiles:  missing.append("profile")
+        if not all_topics:         missing.append("topic")
+
+        if missing:
+            st.error(f"{L['missing']} {', '.join(missing)}")
+        else:
+            client     = OpenAI(api_key=openai_api_key)
+            new_results = []
+            progress_bar = st.progress(0)
+            status_box   = st.empty()
+
+            combos = [(c, p, t)
+                      for c in selected_countries
+                      for p in selected_profiles
+                      for t in all_topics]
+
+            for idx, (cn, pn, topic) in enumerate(combos):
+                ci = COUNTRIES[cn]
+                pi = PROFILES[pn]
+
+                for q_tmpl in pi["queries"]:
+                    query = build_query(q_tmpl, topic, ci["label"])
+                    status_box.markdown(
+                        f'<div style="font-family:GeistMono,monospace;font-size:0.75rem;'
+                        f'color:var(--text-3);padding:0.4rem 0">'
+                        f'<span style="color:var(--accent)">→</span> {L["scanning"]} · {query}</div>',
+                        unsafe_allow_html=True
+                    )
+
+                    items = google_search(query, google_api_key, google_cse_id,
+                                          gl=ci["code"], hl=ci["lang"], num=results_per_query)
+
+                    for item in items:
+                        ai = score_with_gpt(client, item, pi["label"], ci["label"], topic)
+                        if ai.get("eeat_score", 0) >= min_eeat_score:
+                            new_results.append({
+                                "title":   item.get("title",""),
+                                "url":     item.get("link",""),
+                                "snippet": item.get("snippet",""),
+                                "profile": pi["label"],
+                                "country": ci["label"],
+                                "keyword": topic,
+                                **ai,
+                            })
+                    time.sleep(delay_between_queries)
+
+                progress_bar.progress((idx + 1) / len(combos))
+
+            st.session_state.all_results = new_results
+            msg = L["done_msg"].format(n=len(new_results), s=min_eeat_score)
+            status_box.success(f"✅ {msg}")
+            st.balloons()
+
+
+# ─────────────────────────────────────────────
+# TAB 2 — RESULTS
+# ─────────────────────────────────────────────
+with tab_results:
+    results = st.session_state.all_results
+
+    if not results:
         st.markdown(f"""
-        <div class="result-card">
-            <div style="display: flex; justify-content: space-between;gap: 2rem;">
-                <div style="flex: 1;">
-                    <h4 style="margin: 0 0 0.5rem 0;">{result['title']}</h4>
-                    <p style="color: #B0B8C8; margin: 0.5rem 0; font-size: 0.9rem;">{result['url'][:60]}...</p>
-                    <p style="margin: 1rem 0; line-height: 1.6; color: #B0B8C8;">{result['snippet'][:150]}...</p>
-                    <div style="margin-top: 1rem;">
-                        <span class="badge profile-tag">{result['profile']}</span>
-                        <span class="badge country-tag">{result['country']}</span>
-                        <span class="badge country-tag">{result['topic']}</span>
-                    </div>
-                </div>
-                <div style="text-align: right; flex: 0 0 160px;">
-                    <span class="score-badge {score_class}">EEAT {result['eeat_score']}</span>
-                    <div style="font-size: 0.8rem; color: #B0B8C8; margin-top: 1rem; line-height: 2;">
-                        <strong>Priority:</strong> {result['priority']}<br>
-                        <strong>Audience:</strong> {result['audience']}<br>
-                        <strong>Type:</strong> {result['content_type']}<br>
-                        <strong>Contact:</strong> {result['contact']}
-                    </div>
-                </div>
-            </div>
-            <div style="border-top: 1px solid #2A3142; padding-top: 1rem; margin-top: 1rem;">
-                <p style="font-size: 0.85rem; color: #7A8292; margin: 0;">💡 {result['why']}</p>
-            </div>
+        <div class="empty-state">
+          <div class="empty-state-icon">⚡</div>
+          <div class="empty-state-title">{L["no_results"]}</div>
+          <div class="empty-state-sub">{L["no_results_sub"]}</div>
         </div>
         """, unsafe_allow_html=True)
-    
-    st.divider()
-    csv_buffer = io.StringIO()
-    writer = csv.DictWriter(csv_buffer, fieldnames=filtered[0].keys())
-    writer.writeheader()
-    writer.writerows(filtered)
-    
-    st.download_button("📥 Export CSV", csv_buffer.getvalue(), "idealo_outreach.csv", "text/csv", use_container_width=True)
+    else:
+        # Filter bar
+        fc1, fc2, fc3 = st.columns(3)
+        with fc1:
+            filter_country  = st.multiselect(L["filter_country"],  sorted({r["country"] for r in results}))
+        with fc2:
+            filter_profile  = st.multiselect(L["filter_profile"],  sorted({r["profile"] for r in results}))
+        with fc3:
+            filter_priority = st.multiselect(L["filter_priority"], ["HIGH","MEDIUM","LOW"])
+
+        filtered = results
+        if filter_country:  filtered = [r for r in filtered if r["country"] in filter_country]
+        if filter_profile:  filtered = [r for r in filtered if r["profile"] in filter_profile]
+        if filter_priority: filtered = [r for r in filtered if r["outreach_priority"] in filter_priority]
+        filtered = sorted(filtered, key=lambda x: x.get("eeat_score",0), reverse=True)
+
+        # Summary + mini KPIs
+        n_high = sum(1 for r in filtered if r.get("outreach_priority")=="HIGH")
+        n_mid  = sum(1 for r in filtered if r.get("outreach_priority")=="MEDIUM")
+        avg_eeat = round(sum(r.get("eeat_score",0) for r in filtered) / len(filtered)) if filtered else 0
+
+        st.markdown(f"""
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi-card">
+            <div class="kpi-label">Total</div>
+            <div class="kpi-value" style="font-size:1.6rem">{len(filtered)}</div>
+            <div class="kpi-sub">{L["candidates"]}</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">HIGH priority</div>
+            <div class="kpi-value" style="font-size:1.6rem;color:var(--green)">{n_high}</div>
+            <div class="kpi-sub">immediate outreach</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">MEDIUM priority</div>
+            <div class="kpi-value" style="font-size:1.6rem;color:var(--amber)">{n_mid}</div>
+            <div class="kpi-sub">secondary outreach</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Avg EEAT Score</div>
+            <div class="kpi-value" style="font-size:1.6rem">{avg_eeat}</div>
+            <div class="kpi-sub">out of 100</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown(f"""
+        <div class="results-bar">
+          <div class="results-count">
+            {L["showing"]} <span>{len(filtered)}</span> {L["of"]} {len(results)} {L["candidates"]}
+          </div>
+          <div style="font-family:GeistMono,monospace;font-size:0.68rem;color:var(--text-3)">
+            sorted by EEAT ↓
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        for r in filtered:
+            eeat = r.get("eeat_score", 0)
+            rel  = r.get("relevance_score", 0)
+            prio = r.get("outreach_priority", "LOW")
+            url  = r.get("url","")
+            snippet = r.get("snippet","")
+
+            st.markdown(f"""
+<div class="rcard">
+  <div class="rcard-top">
+    <div style="min-width:0">
+      <a class="rcard-title" href="{url}" target="_blank">{r.get('title','—')}</a>
+      <div class="rcard-url">{url[:90]}{'…' if len(url)>90 else ''}</div>
+    </div>
+    <div class="rcard-scores">
+      <span class="score-pill {pill_class(eeat)}">EEAT {eeat}</span>
+      <span class="score-pill {pill_class(rel)}">REL {rel}</span>
+      <span class="prio-pill prio-{prio}">{prio}</span>
+    </div>
+  </div>
+  <div class="rcard-meta">
+    <span class="tag profile">{r.get('profile','')}</span>
+    <span class="tag country">{r.get('country','')}</span>
+    <span class="tag">{r.get('keyword','')}</span>
+    <span class="tag">{r.get('content_type','')}</span>
+  </div>
+  <div class="rcard-snippet">{snippet[:200]}{'…' if len(snippet)>200 else ''}</div>
+  <div class="rcard-footer">
+    <div class="rcard-footer-item">
+      <span class="dot">💬</span>
+      <strong>{L["why"]}:</strong> {r.get('why','')}
+    </div>
+    <div class="rcard-footer-item">
+      <span class="dot">📨</span>
+      <strong>{L["contact"]}:</strong> {r.get('contact_hint','')}
+    </div>
+    <div class="rcard-footer-item">
+      <span class="dot">👥</span>
+      <strong>{L["audience"]}:</strong> {r.get('estimated_audience','?')}
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────
+# TAB 3 — EXPORT
+# ─────────────────────────────────────────────
+with tab_export:
+    results = st.session_state.all_results
+
+    if not results:
+        st.markdown(f"""
+        <div class="empty-state">
+          <div class="empty-state-icon">📤</div>
+          <div class="empty-state-title">{L["no_export"]}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown(f'<div class="section-label">{L["export_title"]} · {len(results)} rows</div>', unsafe_allow_html=True)
+
+        csv_data = results_to_csv(results)
+        st.download_button(
+            label=f"⬇ {L['export_btn']}",
+            data=csv_data,
+            file_name="idealo_eeat_outreach.csv",
+            mime="text/csv",
+            use_container_width=True,
+        )
+
+        st.markdown(f'<div class="section-label" style="margin-top:1.5rem">{L["preview"]}</div>', unsafe_allow_html=True)
+        st.json(results[:5])
