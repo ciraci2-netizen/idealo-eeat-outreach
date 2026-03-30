@@ -510,33 +510,41 @@ PROFILES = {
     "📝 Blogger": {
         "label": "Blogger",
         "queries": [
-            '{keyword} blog {country}',
-            'best {keyword} {country} blog review',
-            '{keyword} recommendations blogger site:wordpress.com OR site:blogspot.com',
+            'site:wordpress.com {keyword} review blog {country}',
+            'site:blogspot.com {keyword} reseña OR review blog {country}',
+            '{keyword} "mi experiencia" OR "análisis" blog personal {country} -nytimes.com -forbes.com -elmundo.es -elpais.com',
         ]
     },
     "📰 Journalist": {
         "label": "Journalist",
         "queries": [
-            '{keyword} journalist {country}',
-            '{keyword} article review journalist {country}',
-            'site:linkedin.com {keyword} journalist {country}',
+            'site:linkedin.com/in {keyword} journalist OR periodista {country}',
+            'site:linkedin.com/in {keyword} editor OR redactor tecnologia {country}',
+            'site:muck-rack.com {keyword} journalist {country}',
         ]
     },
-    "🤳 Micro-influencer": {
-        "label": "Micro-influencer",
+    "🤳 TikToker / Instagram": {
+        "label": "TikToker/Instagram",
         "queries": [
-            '{keyword} influencer {country} site:instagram.com OR site:tiktok.com',
-            '{keyword} micro influencer {country}',
-            '{keyword} creator {country} collaboration',
+            'site:tiktok.com {keyword} {country}',
+            'site:instagram.com {keyword} reseña OR review OR unboxing {country}',
+            'site:tiktok.com {keyword} review OR unboxing OR comparativa',
         ]
     },
     "▶️ YouTuber": {
         "label": "YouTuber",
         "queries": [
-            '{keyword} review {country} site:youtube.com',
-            '{keyword} youtube channel {country}',
-            '{keyword} youtuber {country} comparison',
+            'site:youtube.com {keyword} review {country} canal',
+            'site:youtube.com {keyword} unboxing OR comparativa OR análisis {country}',
+            'site:youtube.com {keyword} mejores {country} 2024',
+        ]
+    },
+    "💼 LinkedIn Creator": {
+        "label": "LinkedIn Creator",
+        "queries": [
+            'site:linkedin.com/in {keyword} influencer OR creator OR experto {country}',
+            'site:linkedin.com/pulse {keyword} {country}',
+            'site:linkedin.com {keyword} "top voice" {country}',
         ]
     },
 }
@@ -674,6 +682,80 @@ def tavily_search(query, api_key, country_code, num=5):
         st.warning(f"Tavily search error: {e}")
         return []
 
+def get_youtube_stats(video_or_channel_url: str, yt_api_key: str) -> dict:
+    """Fetch real view/subscriber counts from YouTube Data API v3."""
+    import re
+    if not yt_api_key:
+        return {"yt_views": None, "yt_subscribers": None, "yt_video_count": None}
+    try:
+        # Channel handle or /c/ or /channel/
+        ch_match = re.search(r"youtube\.com/(?:@|c/|channel/)([\w\-]+)", video_or_channel_url)
+        vid_match = re.search(r"(?:v=|youtu\.be/)([\w\-]{11})", video_or_channel_url)
+        base = "https://www.googleapis.com/youtube/v3"
+
+        if ch_match:
+            handle = ch_match.group(1)
+            # Try forHandle first, fallback to search
+            r = requests.get(f"{base}/channels", params={
+                "key": yt_api_key, "forHandle": handle,
+                "part": "statistics", "maxResults": 1
+            }, timeout=8)
+            items = r.json().get("items", [])
+            if not items:
+                r2 = requests.get(f"{base}/search", params={
+                    "key": yt_api_key, "q": handle,
+                    "type": "channel", "part": "snippet", "maxResults": 1
+                }, timeout=8)
+                ch_id = r2.json().get("items", [{}])[0].get("id", {}).get("channelId","")
+                if ch_id:
+                    r3 = requests.get(f"{base}/channels", params={
+                        "key": yt_api_key, "id": ch_id, "part": "statistics"
+                    }, timeout=8)
+                    items = r3.json().get("items", [])
+            if items:
+                stats = items[0].get("statistics", {})
+                return {
+                    "yt_views":       int(stats.get("viewCount", 0)),
+                    "yt_subscribers": int(stats.get("subscriberCount", 0)),
+                    "yt_video_count": int(stats.get("videoCount", 0)),
+                }
+
+        elif vid_match:
+            vid_id = vid_match.group(1)
+            r = requests.get(f"{base}/videos", params={
+                "key": yt_api_key, "id": vid_id,
+                "part": "statistics,snippet", "maxResults": 1
+            }, timeout=8)
+            items = r.json().get("items", [])
+            if items:
+                stats = items[0].get("statistics", {})
+                return {
+                    "yt_views":       int(stats.get("viewCount", 0)),
+                    "yt_subscribers": None,
+                    "yt_video_count": None,
+                }
+    except Exception:
+        pass
+    return {"yt_views": None, "yt_subscribers": None, "yt_video_count": None}
+
+
+def audience_to_num(audience_str: str) -> int:
+    """Convert GPT audience estimate like '10k-50k' to a sortable integer (lower bound)."""
+    if not audience_str or audience_str.lower() in ("unknown", "?", ""):
+        return 0
+    import re
+    s = audience_str.lower().replace(",", "").replace(".", "")
+    nums = re.findall(r"(\d+)(k|m)?", s)
+    if not nums:
+        return 0
+    n, unit = nums[0]
+    val = int(n)
+    if unit == "k": val *= 1_000
+    if unit == "m": val *= 1_000_000
+    return val
+
+
+
 
 def score_with_gpt(client, result, profile, country, keyword):
     system_prompt = (
@@ -681,17 +763,27 @@ def score_with_gpt(client, result, profile, country, keyword):
         "Evaluate web results to identify high-quality outreach candidates. "
         "Respond ONLY with valid JSON — no markdown, no explanation."
     )
-    user_prompt = f"""Evaluate for outreach potential:
+    url_val = result.get('link','')
+    is_generic_media = any(d in url_val for d in [
+        'nytimes.com','forbes.com','bbc.com','theguardian.com','reuters.com',
+        'wikipedia.org','amazon.com','elmundo.es','elpais.com','marca.com',
+        'as.com','20minutos.es','lavanguardia.com','abc.es'
+    ])
+    penalty_note = " IMPORTANT: This URL is from a major news outlet or generic site — score eeat_score MAX 15 and outreach_priority LOW." if is_generic_media else ""
+    user_prompt = f"""You are evaluating outreach candidates for Idealo (price comparison). 
+We want INDIVIDUAL creators: bloggers with personal sites, YouTubers with channels, TikTokers, Instagram creators, LinkedIn influencers.
+We do NOT want: news outlets, corporate sites, Wikipedia, aggregators, e-commerce sites.{penalty_note}
+
 Profile: {profile} | Country: {country} | Topic: {keyword}
 Title: {result.get('title','')}
-URL: {result.get('link','')}
+URL: {url_val}
 Snippet: {result.get('snippet','')}
 
-Return JSON with keys:
+Return JSON only:
 eeat_score (0-100), relevance_score (0-100),
 outreach_priority ("HIGH"|"MEDIUM"|"LOW"),
-contact_hint (string), why (one sentence),
-estimated_audience (string), content_type (string)"""
+contact_hint (string), why (one sentence max),
+estimated_audience (string like "5k-20k"), content_type (string)"""
     try:
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -767,6 +859,7 @@ with st.sidebar:
     _secret_google = st.secrets.get("TAVILY_API_KEY", "") if hasattr(st, "secrets") else ""
     _secret_cse    = ""  # not used with Tavily
     _secret_openai = st.secrets.get("OPENAI_API_KEY", "") if hasattr(st, "secrets") else ""
+    _secret_yt     = st.secrets.get("YOUTUBE_API_KEY", "") if hasattr(st, "secrets") else ""
 
     st.markdown(f'<div class="section-label">{L["api_config"]}</div>', unsafe_allow_html=True)
 
@@ -791,6 +884,13 @@ with st.sidebar:
     else:
         openai_api_key = st.text_input(L["key_openai"], type="password", placeholder="sk-...", label_visibility="collapsed")
         st.markdown(f'<div class="api-status"><div class="{"dot-ok" if openai_api_key else "dot-off"}"></div>OpenAI Key · {L["status_ok"] if openai_api_key else L["status_empty"]}</div>', unsafe_allow_html=True)
+
+    if _secret_yt:
+        yt_api_key = _secret_yt
+        st.markdown(f'<div class="api-status"><div class="dot-ok"></div>YouTube API · via Secrets · {L["status_ok"]}</div>', unsafe_allow_html=True)
+    else:
+        yt_api_key = st.text_input("YouTube Data API Key (optional)", type="password", placeholder="AIza...", label_visibility="collapsed")
+        st.markdown(f'<div class="api-status"><div class="{"dot-ok" if yt_api_key else "dot-off"}"></div>YouTube API · {"real stats" if yt_api_key else "GPT estimate only"}</div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="section-label">{L["search_settings"]}</div>', unsafe_allow_html=True)
 
@@ -951,13 +1051,20 @@ with tab_search:
                     for item in items:
                         ai = score_with_gpt(client, item, pi["label"], ci["label"], topic)
                         if ai.get("eeat_score", 0) >= min_eeat_score:
+                            item_url = item.get("link","")
+                            yt_stats = {}
+                            if "youtube.com" in item_url and yt_api_key:
+                                yt_stats = get_youtube_stats(item_url, yt_api_key)
+                            audience_num = yt_stats.get("yt_subscribers") or yt_stats.get("yt_views") or audience_to_num(ai.get("estimated_audience",""))
                             new_results.append({
-                                "title":   item.get("title",""),
-                                "url":     item.get("link",""),
-                                "snippet": item.get("snippet",""),
-                                "profile": pi["label"],
-                                "country": ci["label"],
-                                "keyword": topic,
+                                "title":        item.get("title",""),
+                                "url":          item_url,
+                                "snippet":      item.get("snippet",""),
+                                "profile":      pi["label"],
+                                "country":      ci["label"],
+                                "keyword":      topic,
+                                "audience_num": audience_num,
+                                **yt_stats,
                                 **ai,
                             })
                     time.sleep(delay_between_queries)
@@ -994,11 +1101,35 @@ with tab_results:
         with fc3:
             filter_priority = st.multiselect(L["filter_priority"], ["HIGH","MEDIUM","LOW"])
 
+        # Audience filter
+        aud_col1, aud_col2 = st.columns([2,1])
+        with aud_col1:
+            AUDIENCE_TIERS = {
+                "Any": 0,
+                "Micro (1k+)": 1_000,
+                "Small (10k+)": 10_000,
+                "Medium (50k+)": 50_000,
+                "Large (100k+)": 100_000,
+                "Mega (500k+)": 500_000,
+            }
+            aud_filter_label = st.select_slider(
+                "Min audience / subscribers",
+                options=list(AUDIENCE_TIERS.keys()),
+                value="Any",
+            )
+        with aud_col2:
+            sort_by = st.selectbox("Sort by", ["EEAT score", "Audience", "Relevance"], label_visibility="visible")
+
+        min_audience = AUDIENCE_TIERS[aud_filter_label]
+
         filtered = results
         if filter_country:  filtered = [r for r in filtered if r["country"] in filter_country]
         if filter_profile:  filtered = [r for r in filtered if r["profile"] in filter_profile]
         if filter_priority: filtered = [r for r in filtered if r["outreach_priority"] in filter_priority]
-        filtered = sorted(filtered, key=lambda x: x.get("eeat_score",0), reverse=True)
+        if min_audience > 0:
+            filtered = [r for r in filtered if r.get("audience_num", 0) >= min_audience]
+        sort_key = {"EEAT score": "eeat_score", "Audience": "audience_num", "Relevance": "relevance_score"}[sort_by]
+        filtered = sorted(filtered, key=lambda x: x.get(sort_key, 0), reverse=True)
 
         # Summary + mini KPIs
         n_high = sum(1 for r in filtered if r.get("outreach_priority")=="HIGH")
@@ -1079,9 +1210,10 @@ with tab_results:
     </div>
     <div class="rcard-footer-item">
       <span class="dot">👥</span>
-      <strong>{L["audience"]}:</strong> {r.get('estimated_audience','?')}
-    </div>
-  </div>
+      <strong>{L["audience"]}:</strong> {"▶ {:,} subs · {:,} views".format(r["yt_subscribers"], r["yt_views"]) if r.get("yt_subscribers") else r.get("estimated_audience","?")}
+    </div>{
+  ('<div class="rcard-footer-item"><span class="dot">🎬</span><strong>Videos:</strong> {:,}</div>'.format(r["yt_video_count"]) if r.get("yt_video_count") else "")
+}  </div>
 </div>
 """, unsafe_allow_html=True)
 
