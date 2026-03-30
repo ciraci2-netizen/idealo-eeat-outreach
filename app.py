@@ -506,43 +506,73 @@ COUNTRIES = {
     "🇵🇱 Poland":   {"code": "pl", "lang": "pl", "label": "PL"},
 }
 
+# Localized query terms per country
+COUNTRY_TERMS = {
+    "DE": {"review": "Test Erfahrung", "blog": "Blog Testbericht", "unboxing": "Unboxing Test",
+           "best": "bester", "analysis": "Analyse", "journalist": "Journalist Redakteur",
+           "influencer": "Influencer Creator", "creator": "Creator"},
+    "IT": {"review": "recensione", "blog": "blog recensione", "unboxing": "unboxing recensione",
+           "best": "migliori", "analysis": "analisi", "journalist": "giornalista redattore",
+           "influencer": "influencer creator", "creator": "creator"},
+    "FR": {"review": "avis test", "blog": "blog avis", "unboxing": "déballage test",
+           "best": "meilleur", "analysis": "analyse", "journalist": "journaliste rédacteur",
+           "influencer": "influenceur créateur", "creator": "créateur"},
+    "ES": {"review": "reseña análisis", "blog": "blog reseña", "unboxing": "unboxing reseña",
+           "best": "mejores", "analysis": "análisis", "journalist": "periodista redactor",
+           "influencer": "influencer creador", "creator": "creador"},
+    "UK": {"review": "review", "blog": "blog review", "unboxing": "unboxing review",
+           "best": "best", "analysis": "analysis", "journalist": "journalist editor",
+           "influencer": "influencer creator", "creator": "creator"},
+    "PL": {"review": "recenzja opinia", "blog": "blog recenzja", "unboxing": "unboxing recenzja",
+           "best": "najlepszy", "analysis": "analiza", "journalist": "dziennikarz redaktor",
+           "influencer": "influencer twórca", "creator": "twórca"},
+}
+
+def localize_query(template, keyword, country_label):
+    t = COUNTRY_TERMS.get(country_label, COUNTRY_TERMS["UK"])
+    q = template
+    for k, v in t.items():
+        q = q.replace("{"+k+"}", v)
+    q = q.replace("{keyword}", keyword).replace("{country}", country_label)
+    return q
+
 PROFILES = {
     "📝 Blogger": {
         "label": "Blogger",
         "queries": [
-            'site:wordpress.com {keyword} review blog {country}',
-            'site:blogspot.com {keyword} reseña OR review blog {country}',
-            '{keyword} "mi experiencia" OR "análisis" blog personal {country} -nytimes.com -forbes.com -elmundo.es -elpais.com',
+            'site:wordpress.com {keyword} {review} {country}',
+            'site:blogspot.com {keyword} {blog} {country}',
+            '{keyword} {review} blog personal {country} -nytimes.com -forbes.com -bbc.com -spiegel.de -elmundo.es',
         ]
     },
     "📰 Journalist": {
         "label": "Journalist",
         "queries": [
-            'site:linkedin.com/in {keyword} journalist OR periodista {country}',
-            'site:linkedin.com/in {keyword} editor OR redactor tecnologia {country}',
-            'site:muck-rack.com {keyword} journalist {country}',
+            'site:linkedin.com/in {keyword} {journalist} {country}',
+            'site:linkedin.com/in {keyword} tecnologia {journalist} {country}',
+            'site:muck-rack.com {keyword} {country}',
         ]
     },
     "🤳 TikToker / Instagram": {
         "label": "TikToker/Instagram",
         "queries": [
             'site:tiktok.com {keyword} {country}',
-            'site:instagram.com {keyword} reseña OR review OR unboxing {country}',
-            'site:tiktok.com {keyword} review OR unboxing OR comparativa',
+            'site:instagram.com {keyword} {unboxing} {country}',
+            'site:tiktok.com {keyword} {unboxing}',
         ]
     },
     "▶️ YouTuber": {
         "label": "YouTuber",
         "queries": [
-            'site:youtube.com {keyword} review {country} canal',
-            'site:youtube.com {keyword} unboxing OR comparativa OR análisis {country}',
-            'site:youtube.com {keyword} mejores {country} 2024',
+            'site:youtube.com {keyword} {review} {country}',
+            'site:youtube.com {keyword} {unboxing} {country}',
+            'site:youtube.com {keyword} {best} {country} 2024',
         ]
     },
     "💼 LinkedIn Creator": {
         "label": "LinkedIn Creator",
         "queries": [
-            'site:linkedin.com/in {keyword} influencer OR creator OR experto {country}',
+            'site:linkedin.com/in {keyword} {influencer} {country}',
             'site:linkedin.com/pulse {keyword} {country}',
             'site:linkedin.com {keyword} "top voice" {country}',
         ]
@@ -553,6 +583,16 @@ TOPICS = [
     "smartphones", "laptops", "headphones", "smart home",
     "tablets", "cameras", "TVs", "washing machines",
     "vacuum cleaners", "gaming peripherals",
+]
+
+DEFAULT_BLACKLIST = [
+    "nytimes.com","forbes.com","bbc.com","theguardian.com","reuters.com",
+    "wikipedia.org","amazon.com","amazon.de","amazon.es","amazon.it","amazon.fr",
+    "elmundo.es","elpais.com","marca.com","as.com","20minutos.es",
+    "lavanguardia.com","abc.es","spiegel.de","bild.de","faz.net","focus.de",
+    "corriere.it","repubblica.it","gazzetta.it","lefigaro.fr","lemonde.fr",
+    "rtl.de","sat1.de","pro7.de","ebay.com","ebay.de","mediamarkt.de",
+    "mediaworld.it","fnac.es","pccomponentes.com","idealo.de","idealo.es",
 ]
 
 # ─────────────────────────────────────────────
@@ -798,7 +838,34 @@ estimated_audience (string like "5k-20k"), content_type (string)"""
 
 
 def build_query(template, keyword, country_label):
-    return template.replace("{keyword}", keyword).replace("{country}", country_label)
+    return localize_query(template, keyword, country_label)
+
+
+def generate_outreach_email(client, result: dict, lang: str) -> str:
+    lang_instruction = "Write in Spanish." if lang == "ES" else "Write in English."
+    prompt = f"""{lang_instruction}
+Write a short, personalized outreach email from Idealo (Europe's leading price comparison platform) to this creator/journalist.
+Be concise, friendly, professional. Max 120 words. No subject line needed here — just the email body.
+
+Creator profile: {result.get('profile','')}
+Country: {result.get('country','')}
+Topic: {result.get('keyword','')}
+Their site/channel: {result.get('url','')}
+Title: {result.get('title','')}
+Estimated audience: {result.get('estimated_audience','')}
+Why good fit: {result.get('why','')}
+
+Focus on: mutual value, their audience relevance to Idealo, specific collaboration idea (sponsored post, product review, affiliate link, etc)."""
+    try:
+        resp = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"user","content":prompt}],
+            temperature=0.7, max_tokens=200,
+        )
+        return resp.choices[0].message.content.strip()
+    except Exception as e:
+        return f"Error generating email: {e}"
+
 
 
 def pill_class(score):
@@ -827,6 +894,12 @@ if "lang" not in st.session_state:
     st.session_state.lang = "EN"
 if "speed" not in st.session_state:
     st.session_state.speed = "Normal"
+if "blacklist" not in st.session_state:
+    st.session_state.blacklist = list(DEFAULT_BLACKLIST)
+if "seen_urls" not in st.session_state:
+    st.session_state.seen_urls = set()
+if "generated_emails" not in st.session_state:
+    st.session_state.generated_emails = {}
 
 
 # ─────────────────────────────────────────────
@@ -1025,6 +1098,8 @@ with tab_search:
         else:
             client     = OpenAI(api_key=openai_api_key)
             new_results = []
+            seen_urls   = set()  # deduplication within this run
+            blacklist   = st.session_state.blacklist
             progress_bar = st.progress(0)
             status_box   = st.empty()
 
@@ -1049,9 +1124,18 @@ with tab_search:
                     items = tavily_search(query, google_api_key, ci["code"], num=results_per_query)
 
                     for item in items:
+                        item_url_raw = item.get("link","").split("?")[0].rstrip("/")
+                        # Skip duplicates
+                        if item_url_raw in seen_urls:
+                            continue
+                        seen_urls.add(item_url_raw)
+                        # Skip blacklisted domains
+                        item_domain = item_url_raw.replace("https://","").replace("http://","").split("/")[0].replace("www.","")
+                        if any(bl in item_domain for bl in blacklist):
+                            continue
                         ai = score_with_gpt(client, item, pi["label"], ci["label"], topic)
                         if ai.get("eeat_score", 0) >= min_eeat_score:
-                            item_url = item.get("link","")
+                            item_url = item_url_raw
                             yt_stats = {}
                             if "youtube.com" in item_url and yt_api_key:
                                 yt_stats = get_youtube_stats(item_url, yt_api_key)
@@ -1072,6 +1156,7 @@ with tab_search:
                 progress_bar.progress((idx + 1) / len(combos))
 
             st.session_state.all_results = new_results
+            st.session_state.generated_emails = {}
             msg = L["done_msg"].format(n=len(new_results), s=min_eeat_score)
             status_box.success(f"✅ {msg}")
             st.balloons()
@@ -1216,6 +1301,22 @@ with tab_results:
 }  </div>
 </div>
 """, unsafe_allow_html=True)
+            # Email generator button
+            card_id = r.get("url","")
+            col_btn, col_spacer = st.columns([1, 3])
+            with col_btn:
+                if st.button(f"✉ Generate outreach email", key=f"email_{card_id}"):
+                    with st.spinner("Writing email..."):
+                        _client_mail = OpenAI(api_key=openai_api_key)
+                        email_text = generate_outreach_email(_client_mail, r, st.session_state.lang)
+                        st.session_state.generated_emails[card_id] = email_text
+            if card_id in st.session_state.generated_emails:
+                st.markdown(f"""
+<div style="background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--accent);
+border-radius:6px;padding:1rem 1.2rem;margin:0.3rem 0 0.8rem;
+font-family:Outfit,sans-serif;font-size:0.84rem;color:var(--text-2);line-height:1.6;white-space:pre-wrap">{st.session_state.generated_emails[card_id]}</div>
+""", unsafe_allow_html=True)
+                st.code(st.session_state.generated_emails[card_id], language=None)
 
 
 # ─────────────────────────────────────────────
