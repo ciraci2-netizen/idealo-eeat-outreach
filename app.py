@@ -1354,44 +1354,40 @@ with tab_results:
                 col_left, col_right = st.columns([3, 1])
 
                 with col_left:
-                    # Clickable URL
-                    st.markdown(f"**U0001f517 Link:** [{url}]({url})", unsafe_allow_html=False)
-                    # Snippet
+                    st.markdown(f"[🔗 {url}]({url})")
                     snippet = r.get("snippet", "")
                     if snippet:
-                        st.markdown(f"**U0001f4dd Snippet:** {snippet[:300]}")
-                    # Why good fit
+                        st.caption(snippet[:300])
+                    st.markdown("---")
                     why = r.get("why", "")
                     if why:
-                        st.markdown(f"**U0001f4ac Why:** {why}")
-                    # Contact
+                        st.markdown(f"💬 **Why good fit:** {why}")
                     contact = r.get("contact_hint", "")
                     if contact:
-                        st.markdown(f"**U0001f4e7 Contact:** {contact}")
-                    # Audience
+                        st.markdown(f"📧 **Contact hint:** {contact}")
                     if r.get("yt_subscribers"):
-                        subs = r["yt_subscribers"]
+                        subs  = r["yt_subscribers"]
                         views = r.get("yt_views", 0)
-                        videos = r.get("yt_video_count", 0)
-                        aud_str = f"{subs:,} subscribers  ·  {views:,} views"
-                        if videos:
-                            aud_str += f"  ·  {videos:,} videos"
-                        st.markdown(f"**U0001f4fa YouTube:** {aud_str}")
+                        vids  = r.get("yt_video_count", 0)
+                        aud_str = f"{subs:,} subs · {views:,} views"
+                        if vids:
+                            aud_str += f" · {vids:,} videos"
+                        st.markdown(f"📺 **YouTube:** {aud_str}")
                     else:
                         audience = r.get("estimated_audience", "?")
-                        st.markdown(f"**U0001f465 Audience:** {audience}")
+                        st.markdown(f"👥 **Audience:** {audience}")
 
                 with col_right:
-                    st.metric("EEAT Score", eeat)
-                    st.metric("Relevance", rel)
+                    st.metric("EEAT", eeat)
+                    st.metric("REL", rel)
                     st.markdown(f"**Profile:** {r.get('profile','')}")
                     st.markdown(f"**Country:** {r.get('country','')}")
                     st.markdown(f"**Topic:** {r.get('keyword','')}")
                     st.markdown(f"**Type:** {r.get('content_type','')}")
 
-                # ── Email generator ──
+                # Email generator
                 card_id = url
-                if st.button("✉ Generate outreach email", key=f"email_{card_id}"):
+                if st.button("✉️ Generate outreach email", key=f"email_{card_id}"):
                     with st.spinner("Writing email..."):
                         _client_mail = OpenAI(api_key=openai_api_key)
                         email_text = generate_outreach_email(_client_mail, r, st.session_state.lang)
