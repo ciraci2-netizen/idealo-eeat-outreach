@@ -1320,9 +1320,9 @@ with tab_results:
 
         min_audience = AUDIENCE_TIERS[aud_filter_label]
         filtered = results
-        if filter_country:  filtered = [r for r in filtered if r["country"]  in filter_country]
-        if filter_profile:  filtered = [r for r in filtered if r["profile"]  in filter_profile]
-        if filter_priority: filtered = [r for r in filtered if r["outreach_priority"] in filter_priority]
+        if filter_country:   filtered = [r for r in filtered if r["country"]  in filter_country]
+        if filter_profile:   filtered = [r for r in filtered if r["profile"]  in filter_profile]
+        if filter_priority:  filtered = [r for r in filtered if r["outreach_priority"] in filter_priority]
         if min_audience > 0: filtered = [r for r in filtered if r.get("audience_num", 0) >= min_audience]
         sort_key = {"EEAT score": "eeat_score", "Audience": "audience_num", "Relevance": "relevance_score"}[sort_by]
         filtered = sorted(filtered, key=lambda x: x.get(sort_key, 0), reverse=True)
@@ -1333,51 +1333,72 @@ with tab_results:
         avg_eeat = round(sum(r.get("eeat_score", 0) for r in filtered) / len(filtered)) if filtered else 0
 
         k1, k2, k3, k4 = st.columns(4)
-        k1.metric("Total candidates", len(filtered))
-        k2.metric("✅ HIGH priority",   n_high)
-        k3.metric("⚠️ MEDIUM priority", n_mid)
-        k4.metric("Avg EEAT score",    avg_eeat)
-
-        st.caption(f"{L['showing']} **{len(filtered)}** {L['of']} {len(results)} {L['candidates']} — sorted by {sort_by} ↓")
+        k1.metric("Total", len(filtered))
+        k2.metric("HIGH priority", n_high)
+        k3.metric("MEDIUM priority", n_mid)
+        k4.metric("Avg EEAT", avg_eeat)
+        st.caption(f"Showing **{len(filtered)}** of {len(results)} candidates — sorted by {sort_by} ↓")
         st.divider()
 
-        # ── Result cards (native Streamlit) ──
+        # ── Result cards ──
         for r in filtered:
-            eeat = r.get("eeat_score", 0)
-            rel  = r.get("relevance_score", 0)
-            prio = r.get("outreach_priority", "LOW")
-            url  = r.get("url", "")
-            prio_icon = {"HIGH": "U0001f7e2", "MEDIUM": "U0001f7e1", "LOW": "U0001f534"}.get(prio, "⚪")
+            eeat  = r.get("eeat_score", 0)
+            rel   = r.get("relevance_score", 0)
+            prio  = r.get("outreach_priority", "LOW")
+            url   = r.get("url", "")
+            title = r.get("title", "—")[:80]
+            prio_icon = "🟢" if prio == "HIGH" else ("🟡" if prio == "MEDIUM" else "🔴")
 
-            label = f"{prio_icon} **{r.get('title','—')[:80]}** — EEAT {eeat} · REL {rel} · {prio}"
-            with st.expander(label, expanded=False):
-                col_a, col_b = st.columns([3, 1])
-                with col_a:
-                    st.markdown(f"**U0001f517 URL:** [{url[:80]}]({url})")
-                    st.markdown(f"**U0001f4dd Snippet:** {r.get('snippet','')[:300]}")
-                    st.markdown(f"**U0001f4ac {L['why']}:** {r.get('why','')}")
-                    st.markdown(f"**U0001f4e8 {L['contact']}:** {r.get('contact_hint','')}")
+            exp_label = f"{prio_icon} {title}  |  EEAT {eeat}  ·  REL {rel}  ·  {prio}"
+            with st.expander(exp_label, expanded=False):
+                col_left, col_right = st.columns([3, 1])
+
+                with col_left:
+                    # Clickable URL
+                    st.markdown(f"**U0001f517 Link:** [{url}]({url})", unsafe_allow_html=False)
+                    # Snippet
+                    snippet = r.get("snippet", "")
+                    if snippet:
+                        st.markdown(f"**U0001f4dd Snippet:** {snippet[:300]}")
+                    # Why good fit
+                    why = r.get("why", "")
+                    if why:
+                        st.markdown(f"**U0001f4ac Why:** {why}")
+                    # Contact
+                    contact = r.get("contact_hint", "")
+                    if contact:
+                        st.markdown(f"**U0001f4e7 Contact:** {contact}")
+                    # Audience
                     if r.get("yt_subscribers"):
-                        st.markdown(f"**U0001f4fa YouTube:** {r['yt_subscribers']:,} subs · {r['yt_views']:,} views" + (f" · {r['yt_video_count']:,} videos" if r.get('yt_video_count') else ""))
+                        subs = r["yt_subscribers"]
+                        views = r.get("yt_views", 0)
+                        videos = r.get("yt_video_count", 0)
+                        aud_str = f"{subs:,} subscribers  ·  {views:,} views"
+                        if videos:
+                            aud_str += f"  ·  {videos:,} videos"
+                        st.markdown(f"**U0001f4fa YouTube:** {aud_str}")
                     else:
-                        st.markdown(f"**U0001f465 {L['audience']}:** {r.get('estimated_audience','?')}")
-                with col_b:
-                    st.metric("EEAT", eeat)
-                    st.metric("Relevance", rel)
-                    st.caption(f"Profile: {r.get('profile','')}")
-                    st.caption(f"Country: {r.get('country','')}")
-                    st.caption(f"Topic: {r.get('keyword','')}")
-                    st.caption(f"Type: {r.get('content_type','')}")
+                        audience = r.get("estimated_audience", "?")
+                        st.markdown(f"**U0001f465 Audience:** {audience}")
 
-                # Email generator
+                with col_right:
+                    st.metric("EEAT Score", eeat)
+                    st.metric("Relevance", rel)
+                    st.markdown(f"**Profile:** {r.get('profile','')}")
+                    st.markdown(f"**Country:** {r.get('country','')}")
+                    st.markdown(f"**Topic:** {r.get('keyword','')}")
+                    st.markdown(f"**Type:** {r.get('content_type','')}")
+
+                # ── Email generator ──
                 card_id = url
-                if st.button(f"✉ Generate outreach email", key=f"email_{card_id}"):
+                if st.button("✉ Generate outreach email", key=f"email_{card_id}"):
                     with st.spinner("Writing email..."):
                         _client_mail = OpenAI(api_key=openai_api_key)
                         email_text = generate_outreach_email(_client_mail, r, st.session_state.lang)
                         st.session_state.generated_emails[card_id] = email_text
                 if card_id in st.session_state.generated_emails:
-                    st.text_area("Outreach email", st.session_state.generated_emails[card_id], height=180, key=f"txt_{card_id}")
+                    st.text_area("Outreach email", st.session_state.generated_emails[card_id],
+                                 height=160, key=f"txt_{card_id}")
 
 # TAB 3 — EXPORT
 # ─────────────────────────────────────────────
