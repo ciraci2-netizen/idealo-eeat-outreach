@@ -992,6 +992,12 @@ def pill_class(score):
     if score >= 40: return "mid"
     return "lo"
 
+def he(s):
+    """HTML-escape a string to prevent broken cards."""
+    if not isinstance(s, str):
+        s = str(s) if s is not None else ""
+    return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;").replace('"',"&quot;").replace("'","&#39;")
+
 
 def results_to_csv(results):
     if not results: return ""
@@ -1382,12 +1388,29 @@ with tab_results:
             prio = r.get("outreach_priority", "LOW")
             url  = r.get("url","")
             snippet = r.get("snippet","")
+            r_title    = he(r.get('title','—'))
+            r_profile  = he(r.get('profile',''))
+            r_country  = he(r.get('country',''))
+            r_keyword  = he(r.get('keyword',''))
+            r_ctype    = he(r.get('content_type',''))
+            r_snippet  = he(snippet[:200]) + ('…' if len(snippet)>200 else '')
+            r_why      = he(r.get('why',''))
+            r_contact  = he(r.get('contact_hint',''))
+            r_audience = he(r.get('estimated_audience','?'))
+            yt_line = ""
+            if r.get("yt_subscribers"):
+                yt_line = f"\u25ba {r['yt_subscribers']:,} subs \u00b7 {r['yt_views']:,} views"
+            else:
+                yt_line = r_audience
+            yt_videos = ""
+            if r.get("yt_video_count"):
+                yt_videos = f'<div class="rcard-footer-item"><span class="dot">\U0001f3ac</span><strong>Videos:</strong> {r["yt_video_count"]:,}</div>'
 
             st.markdown(f"""
 <div class="rcard">
   <div class="rcard-top">
     <div style="min-width:0">
-      <a class="rcard-title" href="{url}" target="_blank">{r.get('title','—')}</a>
+      <a class="rcard-title" href="{url}" target="_blank">{r_title}</a>
       <div class="rcard-url">{url[:90]}{'…' if len(url)>90 else ''}</div>
     </div>
     <div class="rcard-scores">
@@ -1397,29 +1420,26 @@ with tab_results:
     </div>
   </div>
   <div class="rcard-meta">
-    <span class="tag profile">{r.get('profile','')}</span>
-    <span class="tag country">{r.get('country','')}</span>
-    <span class="tag">{r.get('keyword','')}</span>
-    <span class="tag">{r.get('content_type','')}</span>
+    <span class="tag profile">{r_profile}</span>
+    <span class="tag country">{r_country}</span>
+    <span class="tag">{r_keyword}</span>
+    <span class="tag">{r_ctype}</span>
   </div>
-  <div class="rcard-snippet">{snippet[:200]}{'…' if len(snippet)>200 else ''}</div>
+  <div class="rcard-snippet">{r_snippet}</div>
   <div class="rcard-footer">
     <div class="rcard-footer-item">
-      <span class="dot">💬</span>
-      <strong>{L["why"]}:</strong> {r.get('why','')}
+      <span class="dot">\U0001f4ac</span> <strong>{L["why"]}:</strong> {r_why}
     </div>
     <div class="rcard-footer-item">
-      <span class="dot">📨</span>
-      <strong>{L["contact"]}:</strong> {r.get('contact_hint','')}
+      <span class="dot">\U0001f4e8</span> <strong>{L["contact"]}:</strong> {r_contact}
     </div>
     <div class="rcard-footer-item">
-      <span class="dot">👥</span>
-      <strong>{L["audience"]}:</strong> {"▶ {:,} subs · {:,} views".format(r["yt_subscribers"], r["yt_views"]) if r.get("yt_subscribers") else r.get("estimated_audience","?")}
-    </div>{
-  ('<div class="rcard-footer-item"><span class="dot">🎬</span><strong>Videos:</strong> {:,}</div>'.format(r["yt_video_count"]) if r.get("yt_video_count") else "")
-}  </div>
+      <span class="dot">\U0001f465</span> <strong>{L["audience"]}:</strong> {yt_line}
+    </div>{yt_videos}
+  </div>
 </div>
 """, unsafe_allow_html=True)
+
             # Email generator button
             card_id = r.get("url","")
             col_btn, col_spacer = st.columns([1, 3])
