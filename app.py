@@ -538,6 +538,7 @@ def localize_query(template, keyword, country_label):
 
 # ── Keyword espanse per topic per paese (override automatico) ──
 TOPIC_KEYWORD_MAP = {
+    # ── Categorie spagnole originali ──
     "familia y niños": {
         "DE": "Kinder Familie Babyprodukte",
         "IT": "bambini famiglia prodotti per l'infanzia",
@@ -562,23 +563,83 @@ TOPIC_KEYWORD_MAP = {
         "UK": "home garden furniture decoration",
         "PL": "dom ogród wyposażenie wnętrz",
     },
+    # ── Nuovi topic con keyword localizzate ──
+    "electrodomésticos": {
+        "DE": "Haushaltsgeräte Elektrogeräte Küchen",
+        "IT": "elettrodomestici cucina lavatrice",
+        "FR": "électroménager cuisine lave-linge",
+        "ES": "electrodomésticos cocina lavadora frigorífico",
+        "UK": "home appliances kitchen white goods",
+        "PL": "AGD sprzęt domowy pralka",
+    },
+    "moda y ropa": {
+        "DE": "Mode Kleidung Fashion Stil",
+        "IT": "moda abbigliamento fashion stile",
+        "FR": "mode vêtements fashion style",
+        "ES": "moda ropa fashion tendencias estilo",
+        "UK": "fashion clothing style outfit",
+        "PL": "moda odzież styl trendy",
+    },
+    "belleza y salud": {
+        "DE": "Schönheit Kosmetik Gesundheit Pflege",
+        "IT": "bellezza cosmetici salute cura",
+        "FR": "beauté cosmétiques santé soin",
+        "ES": "belleza cosméticos salud cuidado piel",
+        "UK": "beauty cosmetics health skincare",
+        "PL": "uroda kosmetyki zdrowie pielęgnacja",
+    },
+    "deportes y fitness": {
+        "DE": "Sport Fitness Training Sportzubehör",
+        "IT": "sport fitness allenamento attrezzatura",
+        "FR": "sport fitness entraînement équipement",
+        "ES": "deportes fitness entrenamiento equipamiento gym",
+        "UK": "sports fitness training equipment workout",
+        "PL": "sport fitness trening sprzęt sportowy",
+    },
+    "juguetes": {
+        "DE": "Spielzeug Kinder Spiele Lernspielzeug",
+        "IT": "giocattoli bambini giochi educativi",
+        "FR": "jouets enfants jeux éducatifs",
+        "ES": "juguetes niños juegos educativos regalo",
+        "UK": "toys children games educational gifts",
+        "PL": "zabawki dzieci gry edukacyjne",
+    },
+    "herramientas y bricolaje": {
+        "DE": "Werkzeug Heimwerken DIY Baumarkt",
+        "IT": "utensili bricolage fai da te ferramenta",
+        "FR": "outils bricolage outillage quincaillerie",
+        "ES": "herramientas bricolaje DIY ferretera manualidades",
+        "UK": "tools DIY home improvement hardware",
+        "PL": "narzędzia majsterkowanie DIY",
+    },
 }
 
 PROFILES = {
     "📝 Blogger": {
         "label": "Blogger",
         "queries": [
-            'site:wordpress.com {keyword} {review} {country}',
+            # Domini propri — i blogger professionali non sono su wordpress.com
+            '{keyword} {review} blog -amazon -wikipedia -forbes -nytimes -elmundo -elpais -corriere -spiegel',
+            '{keyword} blog personal {analysis} {country} -site:amazon.com -site:wikipedia.org',
+            # Blogspot come fallback per micro-blogger
             'site:blogspot.com {keyword} {blog} {country}',
-            '{keyword} {review} blog personal {country} -nytimes.com -forbes.com -bbc.com -spiegel.de -elmundo.es',
+            # Cerca autori di post su Medium (ottimi per outreach)
+            'site:medium.com {keyword} {review} {country}',
+            # Cerca su Substack
+            'site:substack.com {keyword} {country}',
         ]
     },
     "📰 Journalist": {
         "label": "Journalist",
         "queries": [
+            # LinkedIn rimane ottimo per trovare giornalisti
             'site:linkedin.com/in {keyword} {journalist} {country}',
-            'site:linkedin.com/in {keyword} tecnologia {journalist} {country}',
+            # Muck Rack — database giornalisti verificati
             'site:muck-rack.com {keyword} {country}',
+            # Cerca giornalisti freelance con portfolio
+            '{keyword} {journalist} freelance portfolio {country} -linkedin.com',
+            # Cerca su Byline — chi scrive di tech/consumer
+            'site:byline.com {keyword} {country}',
         ]
     },
     "🤳 TikToker / Instagram": {
@@ -586,7 +647,8 @@ PROFILES = {
         "queries": [
             'site:tiktok.com {keyword} {country}',
             'site:instagram.com {keyword} {unboxing} {country}',
-            'site:tiktok.com {keyword} {unboxing}',
+            # Linktree rivela creator con multi-piattaforma
+            'site:linktr.ee {keyword} {country}',
         ]
     },
     "▶️ YouTuber": {
@@ -605,15 +667,39 @@ PROFILES = {
             'site:linkedin.com {keyword} "top voice" {country}',
         ]
     },
+    # ── Profilo extra: Micro-blogger ES (siti spagnoli di nicchia) ──
+    "🇪🇸 Blogger ES (nicchia)": {
+        "label": "Blogger ES Nicchia",
+        "queries": [
+            # Bitácoras.com — aggregatore blog spagnolo
+            'site:bitacoras.com {keyword} reseña',
+            # Blog con dominio .es
+            '{keyword} blog reseña site:.es -amazon.es -fnac.es -pccomponentes.com -idealista.com',
+            # Cerca su Bloguzz — community blogger spagnoli
+            'site:bloguzz.com {keyword}',
+            # Forum e community spagnole con esperti
+            '{keyword} "mi experiencia" OR "mi opinión" blog español -marca.com -elmundo.es',
+        ]
+    },
 }
-
 TOPICS = [
+    # Tech
     "smartphones", "laptops", "headphones", "smart home",
-    "tablets", "cameras", "TVs", "washing machines",
-    "vacuum cleaners", "gaming peripherals",
-    "familia y niños",
+    "tablets", "cameras", "TVs",
+    # Hogar y electrodomésticos
+    "washing machines", "vacuum cleaners", "electrodomésticos",
+    # Gaming
+    "gaming peripherals",
+    # Moda y estilo
+    "moda y ropa", "belleza y salud",
+    # Deportes
+    "deportes y fitness",
+    # Familia
+    "familia y niños", "juguetes",
+    # Motor
     "automóvil y motocicleta",
-    "casa y jardín",
+    # Hogar
+    "casa y jardín", "herramientas y bricolaje",
 ]
 
 DEFAULT_BLACKLIST = [
