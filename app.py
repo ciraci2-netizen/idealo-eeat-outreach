@@ -536,6 +536,34 @@ def localize_query(template, keyword, country_label):
     q = q.replace("{keyword}", keyword).replace("{country}", country_label)
     return q
 
+# ── Keyword espanse per topic per paese (override automatico) ──
+TOPIC_KEYWORD_MAP = {
+    "familia y niños": {
+        "DE": "Kinder Familie Babyprodukte",
+        "IT": "bambini famiglia prodotti per l'infanzia",
+        "FR": "enfants famille produits bébé",
+        "ES": "familia niños productos infantiles bebé",
+        "UK": "children family baby products kids",
+        "PL": "dzieci rodzina produkty dla niemowląt",
+    },
+    "automóvil y motocicleta": {
+        "DE": "Auto Motorrad Kfz-Zubehör",
+        "IT": "automobile moto accessori auto",
+        "FR": "voiture moto accessoires automobile",
+        "ES": "automóvil moto accesorios coche motocicleta",
+        "UK": "car motorcycle auto accessories",
+        "PL": "samochód motocykl akcesoria samochodowe",
+    },
+    "casa y jardín": {
+        "DE": "Haus Garten Heimdekoration",
+        "IT": "casa giardino arredamento",
+        "FR": "maison jardin décoration intérieure",
+        "ES": "casa jardín decoración hogar muebles",
+        "UK": "home garden furniture decoration",
+        "PL": "dom ogród wyposażenie wnętrz",
+    },
+}
+
 PROFILES = {
     "📝 Blogger": {
         "label": "Blogger",
@@ -583,6 +611,9 @@ TOPICS = [
     "smartphones", "laptops", "headphones", "smart home",
     "tablets", "cameras", "TVs", "washing machines",
     "vacuum cleaners", "gaming peripherals",
+    "familia y niños",
+    "automóvil y motocicleta",
+    "casa y jardín",
 ]
 
 DEFAULT_BLACKLIST = [
@@ -838,7 +869,9 @@ estimated_audience (string like "5k-20k"), content_type (string)"""
 
 
 def build_query(template, keyword, country_label):
-    return localize_query(template, keyword, country_label)
+    # Se il topic ha keyword localizzate specifiche, usale al posto del nome categoria
+    localized_kw = TOPIC_KEYWORD_MAP.get(keyword, {}).get(country_label, keyword)
+    return localize_query(template, localized_kw, country_label)
 
 
 def generate_outreach_email(client, result: dict, lang: str) -> str:
