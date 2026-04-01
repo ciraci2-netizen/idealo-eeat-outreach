@@ -1294,15 +1294,9 @@ with tab_results:
     results = st.session_state.all_results
 
     if not results:
-        st.markdown(f"""
-        <div class="empty-state">
-          <div class="empty-state-icon">⚡</div>
-          <div class="empty-state-title">{L["no_results"]}</div>
-          <div class="empty-state-sub">{L["no_results_sub"]}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.info("⚡ " + L["no_results"] + " — " + L["no_results_sub"])
     else:
-        # Filter bar
+        # ── Filters ──
         fc1, fc2, fc3 = st.columns(3)
         with fc1:
             filter_country  = st.multiselect(L["filter_country"],  sorted({r["country"] for r in results}))
@@ -1311,154 +1305,80 @@ with tab_results:
         with fc3:
             filter_priority = st.multiselect(L["filter_priority"], ["HIGH","MEDIUM","LOW"])
 
-        # Audience filter
-        aud_col1, aud_col2 = st.columns([2,1])
+        aud_col1, aud_col2 = st.columns([2, 1])
         with aud_col1:
             AUDIENCE_TIERS = {
-                "Any": 0,
-                "Micro (1k+)": 1_000,
-                "Small (10k+)": 10_000,
-                "Medium (50k+)": 50_000,
-                "Large (100k+)": 100_000,
-                "Mega (500k+)": 500_000,
+                "Any": 0, "Micro (1k+)": 1_000, "Small (10k+)": 10_000,
+                "Medium (50k+)": 50_000, "Large (100k+)": 100_000, "Mega (500k+)": 500_000,
             }
             aud_filter_label = st.select_slider(
                 "Min audience / subscribers",
-                options=list(AUDIENCE_TIERS.keys()),
-                value="Any",
+                options=list(AUDIENCE_TIERS.keys()), value="Any",
             )
         with aud_col2:
-            sort_by = st.selectbox("Sort by", ["EEAT score", "Audience", "Relevance"], label_visibility="visible")
+            sort_by = st.selectbox("Sort by", ["EEAT score", "Audience", "Relevance"])
 
         min_audience = AUDIENCE_TIERS[aud_filter_label]
-
         filtered = results
-        if filter_country:  filtered = [r for r in filtered if r["country"] in filter_country]
-        if filter_profile:  filtered = [r for r in filtered if r["profile"] in filter_profile]
+        if filter_country:  filtered = [r for r in filtered if r["country"]  in filter_country]
+        if filter_profile:  filtered = [r for r in filtered if r["profile"]  in filter_profile]
         if filter_priority: filtered = [r for r in filtered if r["outreach_priority"] in filter_priority]
-        if min_audience > 0:
-            filtered = [r for r in filtered if r.get("audience_num", 0) >= min_audience]
+        if min_audience > 0: filtered = [r for r in filtered if r.get("audience_num", 0) >= min_audience]
         sort_key = {"EEAT score": "eeat_score", "Audience": "audience_num", "Relevance": "relevance_score"}[sort_by]
         filtered = sorted(filtered, key=lambda x: x.get(sort_key, 0), reverse=True)
 
-        # Summary + mini KPIs
-        n_high = sum(1 for r in filtered if r.get("outreach_priority")=="HIGH")
-        n_mid  = sum(1 for r in filtered if r.get("outreach_priority")=="MEDIUM")
-        avg_eeat = round(sum(r.get("eeat_score",0) for r in filtered) / len(filtered)) if filtered else 0
+        # ── Summary KPIs ──
+        n_high   = sum(1 for r in filtered if r.get("outreach_priority") == "HIGH")
+        n_mid    = sum(1 for r in filtered if r.get("outreach_priority") == "MEDIUM")
+        avg_eeat = round(sum(r.get("eeat_score", 0) for r in filtered) / len(filtered)) if filtered else 0
 
-        st.markdown(f"""
-        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
-          <div class="kpi-card">
-            <div class="kpi-label">Total</div>
-            <div class="kpi-value" style="font-size:1.6rem">{len(filtered)}</div>
-            <div class="kpi-sub">{L["candidates"]}</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">HIGH priority</div>
-            <div class="kpi-value" style="font-size:1.6rem;color:var(--green)">{n_high}</div>
-            <div class="kpi-sub">immediate outreach</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">MEDIUM priority</div>
-            <div class="kpi-value" style="font-size:1.6rem;color:var(--amber)">{n_mid}</div>
-            <div class="kpi-sub">secondary outreach</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-label">Avg EEAT Score</div>
-            <div class="kpi-value" style="font-size:1.6rem">{avg_eeat}</div>
-            <div class="kpi-sub">out of 100</div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Total candidates", len(filtered))
+        k2.metric("✅ HIGH priority",   n_high)
+        k3.metric("⚠️ MEDIUM priority", n_mid)
+        k4.metric("Avg EEAT score",    avg_eeat)
 
-        st.markdown(f"""
-        <div class="results-bar">
-          <div class="results-count">
-            {L["showing"]} <span>{len(filtered)}</span> {L["of"]} {len(results)} {L["candidates"]}
-          </div>
-          <div style="font-family:GeistMono,monospace;font-size:0.68rem;color:var(--text-3)">
-            sorted by EEAT ↓
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.caption(f"{L['showing']} **{len(filtered)}** {L['of']} {len(results)} {L['candidates']} — sorted by {sort_by} ↓")
+        st.divider()
 
+        # ── Result cards (native Streamlit) ──
         for r in filtered:
             eeat = r.get("eeat_score", 0)
             rel  = r.get("relevance_score", 0)
             prio = r.get("outreach_priority", "LOW")
-            url  = r.get("url","")
-            snippet = r.get("snippet","")
-            r_title    = he(r.get('title','—'))
-            r_profile  = he(r.get('profile',''))
-            r_country  = he(r.get('country',''))
-            r_keyword  = he(r.get('keyword',''))
-            r_ctype    = he(r.get('content_type',''))
-            r_snippet  = he(snippet[:200]) + ('…' if len(snippet)>200 else '')
-            r_why      = he(r.get('why',''))
-            r_contact  = he(r.get('contact_hint',''))
-            r_audience = he(r.get('estimated_audience','?'))
-            yt_line = ""
-            if r.get("yt_subscribers"):
-                yt_line = f"\u25ba {r['yt_subscribers']:,} subs \u00b7 {r['yt_views']:,} views"
-            else:
-                yt_line = r_audience
-            yt_videos = ""
-            if r.get("yt_video_count"):
-                yt_videos = f'<div class="rcard-footer-item"><span class="dot">\U0001f3ac</span><strong>Videos:</strong> {r["yt_video_count"]:,}</div>'
+            url  = r.get("url", "")
+            prio_icon = {"HIGH": "U0001f7e2", "MEDIUM": "U0001f7e1", "LOW": "U0001f534"}.get(prio, "⚪")
 
-            st.markdown(f"""
-<div class="rcard">
-  <div class="rcard-top">
-    <div style="min-width:0">
-      <a class="rcard-title" href="{url}" target="_blank">{r_title}</a>
-      <div class="rcard-url">{url[:90]}{'…' if len(url)>90 else ''}</div>
-    </div>
-    <div class="rcard-scores">
-      <span class="score-pill {pill_class(eeat)}">EEAT {eeat}</span>
-      <span class="score-pill {pill_class(rel)}">REL {rel}</span>
-      <span class="prio-pill prio-{prio}">{prio}</span>
-    </div>
-  </div>
-  <div class="rcard-meta">
-    <span class="tag profile">{r_profile}</span>
-    <span class="tag country">{r_country}</span>
-    <span class="tag">{r_keyword}</span>
-    <span class="tag">{r_ctype}</span>
-  </div>
-  <div class="rcard-snippet">{r_snippet}</div>
-  <div class="rcard-footer">
-    <div class="rcard-footer-item">
-      <span class="dot">\U0001f4ac</span> <strong>{L["why"]}:</strong> {r_why}
-    </div>
-    <div class="rcard-footer-item">
-      <span class="dot">\U0001f4e8</span> <strong>{L["contact"]}:</strong> {r_contact}
-    </div>
-    <div class="rcard-footer-item">
-      <span class="dot">\U0001f465</span> <strong>{L["audience"]}:</strong> {yt_line}
-    </div>{yt_videos}
-  </div>
-</div>
-""", unsafe_allow_html=True)
+            label = f"{prio_icon} **{r.get('title','—')[:80]}** — EEAT {eeat} · REL {rel} · {prio}"
+            with st.expander(label, expanded=False):
+                col_a, col_b = st.columns([3, 1])
+                with col_a:
+                    st.markdown(f"**U0001f517 URL:** [{url[:80]}]({url})")
+                    st.markdown(f"**U0001f4dd Snippet:** {r.get('snippet','')[:300]}")
+                    st.markdown(f"**U0001f4ac {L['why']}:** {r.get('why','')}")
+                    st.markdown(f"**U0001f4e8 {L['contact']}:** {r.get('contact_hint','')}")
+                    if r.get("yt_subscribers"):
+                        st.markdown(f"**U0001f4fa YouTube:** {r['yt_subscribers']:,} subs · {r['yt_views']:,} views" + (f" · {r['yt_video_count']:,} videos" if r.get('yt_video_count') else ""))
+                    else:
+                        st.markdown(f"**U0001f465 {L['audience']}:** {r.get('estimated_audience','?')}")
+                with col_b:
+                    st.metric("EEAT", eeat)
+                    st.metric("Relevance", rel)
+                    st.caption(f"Profile: {r.get('profile','')}")
+                    st.caption(f"Country: {r.get('country','')}")
+                    st.caption(f"Topic: {r.get('keyword','')}")
+                    st.caption(f"Type: {r.get('content_type','')}")
 
-            # Email generator button
-            card_id = r.get("url","")
-            col_btn, col_spacer = st.columns([1, 3])
-            with col_btn:
+                # Email generator
+                card_id = url
                 if st.button(f"✉ Generate outreach email", key=f"email_{card_id}"):
                     with st.spinner("Writing email..."):
                         _client_mail = OpenAI(api_key=openai_api_key)
                         email_text = generate_outreach_email(_client_mail, r, st.session_state.lang)
                         st.session_state.generated_emails[card_id] = email_text
-            if card_id in st.session_state.generated_emails:
-                st.markdown(f"""
-<div style="background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--accent);
-border-radius:6px;padding:1rem 1.2rem;margin:0.3rem 0 0.8rem;
-font-family:Outfit,sans-serif;font-size:0.84rem;color:var(--text-2);line-height:1.6;white-space:pre-wrap">{st.session_state.generated_emails[card_id]}</div>
-""", unsafe_allow_html=True)
-                st.code(st.session_state.generated_emails[card_id], language=None)
+                if card_id in st.session_state.generated_emails:
+                    st.text_area("Outreach email", st.session_state.generated_emails[card_id], height=180, key=f"txt_{card_id}")
 
-
-# ─────────────────────────────────────────────
 # TAB 3 — EXPORT
 # ─────────────────────────────────────────────
 with tab_export:
